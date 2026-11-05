@@ -1,0 +1,11 @@
+name = "my-expense-tracker"
+main = "worker.js"
+compatibility_date = "2026-03-01"
+
+[vars]
+# สามารถใส่ค่าตัวแปรอื่นๆ ได้ที่นี่
+
+[[d1_databases]]
+binding = "DB"
+database_name = "expense-db"
+database_id = "YOUR_D1_DATABASE_ID"
