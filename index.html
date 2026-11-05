@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full bg-[#0c0d0e] text-[#f0f2f5]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบัญชีรายรับ-รายจ่าย & AI Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-full flex flex-col items-center justify-start p-4 md:p-10 antialiased bg-[#0c0d0e]">
+
+    <div class="w-full max-w-4xl flex flex-col gap-6">
+        
+        <!-- Header & Tab Navigation -->
+        <header class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#272a2e] gap-4">
+            <div>
+                <h1 class="text-xl font-medium tracking-tight text-[#f0f2f5]">ระบบบัญชีรายรับ-รายจ่าย</h1>
+                <p class="text-xs text-[#9ca3af]">Dark Minimalist Financial Ledger & AI Assistant</p>
+            </div>
+            
+            <nav class="flex gap-4 text-sm font-medium text-[#9ca3af]">
+                <button id="tab-app-btn" onclick="switchTab('app')" class="pb-2 tab-active transition-colors">
+                    บันทึกบัญชี
+                </button>
+                <button id="tab-ai-btn" onclick="switchTab('ai')" class="pb-2 hover:text-[#f0f2f5] transition-colors">
+                    คุยกับ AI
+                </button>
+            </nav>
+        </header>
+
+        <!-- TAB 1: WEB APP UI -->
+        <main id="tab-app" class="flex flex-col gap-8 w-full max-w-lg mx-auto">
+            
+            <!-- Summary Cards -->
+            <section class="grid grid-cols-1 gap-3">
+                <div class="bg-[#16181a] p-6 rounded-xl border border-[#272a2e] shadow-sm">
+                    <span class="text-xs font-normal text-[#9ca3af] block mb-1">ยอดเงินคงเหลือสุทธิ</span>
+                    <div id="net-balance" class="text-3xl font-mono tracking-tight font-medium text-[#f0f2f5]">0.00 บาท</div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-[#16181a] p-4 rounded-xl border border-[#272a2e] shadow-sm">
+                        <span class="text-xs font-normal text-[#9ca3af] block mb-1">รายรับรวม</span>
+                        <div id="total-income" class="text-base font-mono font-medium text-[#f0f2f5]">0.00 บาท</div>
+                    </div>
+                    <div class="bg-[#16181a] p-4 rounded-xl border border-[#272a2e] shadow-sm">
+                        <span class="text-xs font-normal text-[#9ca3af] block mb-1">รายจ่ายรวม</span>
+                        <div id="total-expense" class="text-base font-mono font-medium text-[#9ca3af]">0.00 บาท</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Form -->
+            <form onsubmit="handleFormSubmit(event)" class="bg-[#16181a] p-5 rounded-xl border border-[#272a2e] shadow-sm flex flex-col gap-4">
+                
+                <div class="grid grid-cols-2 p-1 bg-[#0c0d0e] border border-[#272a2e] rounded-lg text-xs font-medium">
+                    <button 
+                        type="button" 
+                        id="type-expense-btn"
+                        onclick="selectType('expense')"
+                        class="py-2 rounded-md text-center transition-all bg-[#16181a] text-[#f0f2f5] shadow-sm"
+                    >
+                        รายจ่าย
+                    </button>
+                    <button 
+                        type="button" 
+                        id="type-income-btn"
+                        onclick="selectType('income')"
+                        class="py-2 rounded-md text-center transition-all text-[#9ca3af] hover:text-[#f0f2f5]"
+                    >
+                        รายรับ
+                    </button>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <div>
+                        <label class="block text-xs text-[#9ca3af] mb-1">ชื่อรายการ</label>
+                        <input 
+                            type="text" 
+                            id="input-desc" 
+                            placeholder="เช่น ค่าอาหารกลางวัน, เงินเดือน" 
+                            required
+                            class="w-full bg-[#0c0d0e] border border-[#272a2e] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f0f2f5] transition text-[#f0f2f5] placeholder-[#555]"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-[#9ca3af] mb-1">จำนวนเงิน (บาท)</label>
+                        <input 
+                            type="number" 
+                            id="input-amount" 
+                            placeholder="0.00" 
+                            step="any" 
+                            min="0.01" 
+                            required
+                            class="w-full bg-[#0c0d0e] border border-[#272a2e] rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#f0f2f5] transition text-[#f0f2f5] placeholder-[#555]"
+                        >
+                    </div>
+                </div>
+
+                <button 
+                    type="submit" 
+                    class="w-full bg-[#f0f2f5] text-[#0c0d0e] font-medium py-2.5 rounded-lg text-xs tracking-wide hover:bg-white transition active:scale-[0.99]"
+                >
+                    บันทึกรายการ
+                </button>
+            </form>
+
+            <!-- Transaction List -->
+            <section class="flex flex-col gap-3">
+                <div class="flex items-center justify-between text-xs text-[#9ca3af]">
+                    <span>ประวัติรายการล่าสุด</span>
+                    <span id="entry-count" class="font-mono">0 รายการ</span>
+                </div>
+
+                <ul id="transaction-list" class="flex flex-col border border-[#272a2e] rounded-xl bg-[#16181a] overflow-hidden divide-y divide-[#272a2e]/60 shadow-sm">
+                </ul>
+            </section>
+        </main>
+
+        <!-- TAB 2: AI ASSISTANT CHAT -->
+        <main id="tab-ai" class="hidden flex-col gap-4 w-full max-w-2xl mx-auto">
+            
+            <div class="bg-[#16181a] p-4 rounded-xl border border-[#272a2e] shadow-sm flex items-center justify-between text-xs">
+                <div>
+                    <span class="text-[#f0f2f5] font-medium">Cloudflare Gemini AI Engine</span>
+                    <p class="text-[#9ca3af] text-[11px]">เชื่อมต่อผ่าน Cloudflare Pages Function (API Key ปลอดภัย 100%)</p>
+                </div>
+                <span class="text-[11px] font-mono text-[#f0f2f5] bg-[#0c0d0e] px-2.5 py-1 border border-[#f0f2f5] rounded-md">Online</span>
+            </div>
+
+            <!-- Quick Action Chips -->
+            <div class="flex flex-wrap gap-2 text-xs">
+                <button onclick="sendQuickPrompt('สรุปยอดเงินคงเหลือและรายรับรายจ่ายทั้งหมด')" class="px-3 py-1.5 border border-[#272a2e] rounded-lg bg-[#16181a] text-[#9ca3af] hover:text-[#f0f2f5] hover:border-[#f0f2f5] transition">
+                    สรุปยอดเงินทั้งหมด
+                </button>
+                <button onclick="sendQuickPrompt('บันทึกรายจ่าย ค่าอาหารกลางวัน 70 บาท')" class="px-3 py-1.5 border border-[#272a2e] rounded-lg bg-[#16181a] text-[#9ca3af] hover:text-[#f0f2f5] hover:border-[#f0f2f5] transition">
+                    บันทึกรายจ่าย 70 บาท
+                </button>
+                <button onclick="sendQuickPrompt('บันทึกรายรับ เงินเดือน 30000 บาท')" class="px-3 py-1.5 border border-[#272a2e] rounded-lg bg-[#16181a] text-[#9ca3af] hover:text-[#f0f2f5] hover:border-[#f0f2f5] transition">
+                    บันทึกรายรับ 30,000 บาท
+                </button>
+                <button onclick="sendQuickPrompt('แสดงรายการทั้งหมดที่เคยบันทึกไว้')" class="px-3 py-1.5 border border-[#272a2e] rounded-lg bg-[#16181a] text-[#9ca3af] hover:text-[#f0f2f5] hover:border-[#f0f2f5] transition">
+                    แสดงรายการทั้งหมด
+                </button>
+            </div>
+
+            <!-- Chat Window -->
+            <div class="bg-[#16181a] border border-[#272a2e] rounded-xl shadow-sm flex flex-col h-[420px] overflow-hidden">
+                <div id="chat-messages" class="flex-1 p-4 overflow-y-auto flex flex-col gap-3 text-xs leading-relaxed">
+                    <div class="self-start max-w-[85%] bg-[#0c0d0e] border border-[#272a2e] p-3.5 rounded-xl text-[#f0f2f5]">
+                        สวัสดีครับ ผมเป็นผู้ช่วย AI ประจำแอปรายรับ-รายจ่าย สามารถสอบถามยอดเงินคงเหลือ หรือบอกให้ผมช่วยบันทึกรายการรายรับ-รายจ่ายให้ได้เลยครับ
+                    </div>
+                </div>
+
+                <!-- Chat Input Form -->
+                <form onsubmit="handleChatSubmit(event)" class="p-3 border-t border-[#272a2e] flex gap-2 bg-[#0c0d0e]">
+                    <input 
+                        type="text" 
+                        id="chat-input" 
+                        placeholder="พิมพ์ข้อความ เช่น 'บันทึกรายจ่าย ค่าแท็กซี่ 150 บาท'..." 
+                        class="flex-1 bg-[#16181a] border border-[#272a2e] rounded-lg px-3 py-2 text-xs text-[#f0f2f5] focus:outline-none focus:border-[#f0f2f5] transition placeholder-[#555]"
+                    >
+                    <button 
+                        type="submit" 
+                        class="bg-[#f0f2f5] text-[#0c0d0e] px-4 py-2 rounded-lg text-xs font-medium hover:bg-white transition active:scale-95"
+                    >
+                        ส่ง
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
