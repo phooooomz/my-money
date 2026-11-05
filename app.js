@@ -1,8 +1,14 @@
-// ... existing code ...
 let currentType = 'expense';
 let records = JSON.parse(localStorage.getItem('ledger_data_th')) || [];
 
-// Set default date input value to today (YYYY-MM-DD)
+// Prevent XSS security issues
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.innerText = text;
+    return div.innerHTML;
+}
+
+// Safely set default date input value to today (YYYY-MM-DD)
 function setDefaultDate() {
     const dateInput = document.getElementById('input-date');
     if (dateInput) {
@@ -12,7 +18,46 @@ function setDefaultDate() {
 }
 
 function switchTab(tab) {
-// ... existing code ...
+    const appTab = document.getElementById('tab-app');
+    const aiTab = document.getElementById('tab-ai');
+    const appBtn = document.getElementById('tab-app-btn');
+    const aiBtn = document.getElementById('tab-ai-btn');
+
+    if (!appTab || !aiTab || !appBtn || !aiBtn) return;
+
+    if (tab === 'app') {
+        appTab.classList.remove('hidden');
+        appTab.classList.add('flex');
+        aiTab.classList.remove('flex');
+        aiTab.classList.add('hidden');
+        
+        appBtn.classList.add('tab-active');
+        aiBtn.classList.remove('tab-active');
+    } else {
+        aiTab.classList.remove('hidden');
+        aiTab.classList.add('flex');
+        appTab.classList.remove('flex');
+        appTab.classList.add('hidden');
+
+        aiBtn.classList.add('tab-active');
+        appBtn.classList.remove('tab-active');
+    }
+}
+
+function selectType(type) {
+    currentType = type;
+    const expBtn = document.getElementById('type-expense-btn');
+    const incBtn = document.getElementById('type-income-btn');
+
+    if (!expBtn || !incBtn) return;
+
+    if (type === 'expense') {
+        expBtn.className = 'py-2 rounded-md text-center transition-all bg-[#16181a] text-[#f0f2f5] shadow-sm';
+        incBtn.className = 'py-2 rounded-md text-center transition-all text-[#9ca3af] hover:text-[#f0f2f5]';
+    } else {
+        incBtn.className = 'py-2 rounded-md text-center transition-all bg-[#16181a] text-[#f0f2f5] shadow-sm';
+        expBtn.className = 'py-2 rounded-md text-center transition-all text-[#9ca3af] hover:text-[#f0f2f5]';
+    }
 }
 
 function render() {
@@ -21,6 +66,8 @@ function render() {
     const netBalanceEl = document.getElementById('net-balance');
     const totalIncomeEl = document.getElementById('total-income');
     const totalExpenseEl = document.getElementById('total-expense');
+
+    if (!listEl || !countEl || !netBalanceEl || !totalIncomeEl || !totalExpenseEl) return;
 
     let totalIncome = 0;
     let totalExpense = 0;
@@ -36,10 +83,11 @@ function render() {
         `;
     } else {
         records.forEach((rec, idx) => {
+            const amount = Number(rec.amount) || 0;
             if (rec.type === 'income') {
-                totalIncome += rec.amount;
+                totalIncome += amount;
             } else {
-                totalExpense += rec.amount;
+                totalExpense += amount;
             }
 
             const li = document.createElement('li');
@@ -48,15 +96,16 @@ function render() {
             const isIncome = rec.type === 'income';
             const sign = isIncome ? '+' : '-';
             const amountClass = isIncome ? 'text-[#f0f2f5]' : 'text-[#9ca3af]';
+            const recordDate = rec.date || new Date().toISOString().split('T')[0];
 
             li.innerHTML = `
                 <div class="flex flex-col gap-0.5">
-                    <span class="text-xs font-medium text-[#f0f2f5]">${escapeHtml(rec.desc)}</span>
-                    <span class="text-[10px] text-[#9ca3af] font-mono">${rec.date || 'ไม่ระบุวันที่'}</span>
+                    <span class="text-xs font-medium text-[#f0f2f5]">${escapeHtml(rec.desc || '')}</span>
+                    <span class="text-[10px] text-[#9ca3af] font-mono">${recordDate}</span>
                 </div>
                 <div class="flex items-center gap-3">
                     <span class="text-xs font-mono font-medium ${amountClass}">
-                        ${sign}${rec.amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
+                        ${sign}${amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
                     </span>
                     <button 
                         onclick="deleteRecord(${idx})"
@@ -82,7 +131,9 @@ function handleFormSubmit(e) {
     const descEl = document.getElementById('input-desc');
     const amountEl = document.getElementById('input-amount');
 
-    const dateVal = dateEl.value || new Date().toISOString().split('T')[0];
+    if (!descEl || !amountEl) return;
+
+    const dateVal = (dateEl && dateEl.value) ? dateEl.value : new Date().toISOString().split('T')[0];
     const desc = descEl.value.trim();
     const amount = parseFloat(amountEl.value);
 
@@ -101,10 +152,64 @@ function handleFormSubmit(e) {
     descEl.value = '';
     amountEl.value = '';
     setDefaultDate();
-
     render();
 }
-// ... existing code ...
+
+function deleteRecord(index) {
+    records.splice(index, 1);
+    localStorage.setItem('ledger_data_th', JSON.stringify(records));
+    render();
+}
+
+function sendQuickPrompt(promptText) {
+    const inputEl = document.getElementById('chat-input');
+    if (inputEl) {
+        inputEl.value = promptText;
+        handleChatSubmit(new Event('submit'));
+    }
+}
+
+async function handleChatSubmit(e) {
+    e.preventDefault();
+    const chatInput = document.getElementById('chat-input');
+    const chatMessages = document.getElementById('chat-messages');
+
+    if (!chatInput || !chatMessages) return;
+
+    const message = chatInput.value.trim();
+    if (!message) return;
+
+    appendMessage('user', message);
+    chatInput.value = '';
+
+    processLocalAiAgent(message);
+
+    const loadingId = appendMessage('ai', 'กำลังคิดคำตอบ...');
+
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt: message,
+                records: records
+            })
+        });
+
+        const data = await response.json();
+        removeMessage(loadingId);
+
+        if (data.error) {
+            appendMessage('ai', `เกิดข้อผิดพลาด: ${data.error}`);
+        } else {
+            appendMessage('ai', data.reply);
+        }
+    } catch (err) {
+        removeMessage(loadingId);
+        appendMessage('ai', 'ขออภัย ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ AI บน Cloudflare ได้ในขณะนี้');
+    }
+}
+
 function processLocalAiAgent(prompt) {
     const recordMatch = prompt.match(/(บันทึก|จด)(รายรับ|รายจ่าย)?\s*(.+?)\s*(\d+(\.\d+)?)\s*(บาท)?$/i);
     
@@ -125,6 +230,35 @@ function processLocalAiAgent(prompt) {
         }
     }
 }
-// ... existing code ...
-setDefaultDate();
-render();
+
+function appendMessage(sender, text) {
+    const chatMessages = document.getElementById('chat-messages');
+    if (!chatMessages) return null;
+
+    const msgId = 'msg-' + Date.now();
+    const isUser = sender === 'user';
+
+    const div = document.createElement('div');
+    div.id = msgId;
+    div.className = isUser 
+        ? 'self-end max-w-[85%] bg-[#f0f2f5] text-[#0c0d0e] p-3.5 rounded-xl font-medium' 
+        : 'self-start max-w-[85%] bg-[#0c0d0e] border border-[#272a2e] p-3.5 rounded-xl text-[#f0f2f5]';
+
+    div.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    return msgId;
+}
+
+function removeMessage(id) {
+    if (!id) return;
+    const el = document.getElementById(id);
+    if (el) el.remove();
+}
+
+// Safely initialize on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+    setDefaultDate();
+    render();
+});
