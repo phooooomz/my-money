@@ -1,9 +1,0 @@
-{
-"name": "ระบบบัญชีรายรับ-รายจ่าย",
-"short_name": "รายรับรายจ่าย",
-"description": "แอปจดบันทึกรายรับ-รายจ่ายมินิมอล พร้อม AI Assistant",
-"start_url": "/",
-"display": "standalone",
-"background_color": "#0c0d0e",
-"theme_color": "#0c0d0e"
-}
