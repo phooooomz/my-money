@@ -1,22 +1,22 @@
 {
 "name": "ระบบบัญชีรายรับ-รายจ่าย",
 "short_name": "รายรับรายจ่าย",
-"description": "แอปจดบันทึกรายรับ-รายจ่าย พร้อม AI Assistant",
+"description": "แอปจดบันทึกรายรับ-รายจ่ายมินิมอล พร้อม AI Assistant",
 "start_url": "/",
 "display": "standalone",
 "background_color": "#0c0d0e",
 "theme_color": "#0c0d0e",
-"gcm_sender_id": "103953800507"
 "icons": [
 {
-"src": "icon.png",
+"src": "/icon.png",
 "sizes": "192x192",
 "type": "image/png"
 },
 {
-"src": "icon.png",
+"src": "/icon.png",
 "sizes": "512x512",
 "type": "image/png"
 }
-]
+],
+"gcm_sender_id": "103953800507"
 }
