@@ -257,8 +257,34 @@ function removeMessage(id) {
     if (el) el.remove();
 }
 
+// Function to update the Online/Offline status badge
+function updateNetworkStatus() {
+    const badge = document.getElementById('ai-status-badge');
+    const dot = document.getElementById('ai-status-dot');
+    const text = document.getElementById('ai-status-text');
+
+    if (!dot || !text) return;
+
+    if (navigator.onLine) {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+        text.textContent = 'Online';
+        text.className = 'text-[#f0f2f5]';
+        if (badge) badge.className = 'text-[11px] font-mono bg-[#0c0d0e] px-2.5 py-1 border border-[#272a2e] rounded-md flex items-center gap-2';
+    } else {
+        dot.className = 'w-2 h-2 rounded-full bg-rose-500';
+        text.textContent = 'Offline';
+        text.className = 'text-rose-400';
+        if (badge) badge.className = 'text-[11px] font-mono bg-[#0c0d0e] px-2.5 py-1 border border-rose-900/50 rounded-md flex items-center gap-2';
+    }
+}
+
 // Safely initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
     setDefaultDate();
     render();
+    
+    // Check initial network status & bind event listeners
+    updateNetworkStatus();
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
 });
