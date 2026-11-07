@@ -1,6 +1,6 @@
 // --- STATE MANAGEMENT ---
 let entries = JSON.parse(localStorage.getItem('ledger_entries') || '[]');
-let currentType = 'income'; // Default to income first
+let currentType = 'income';
 let summaryFilter = 'all';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -44,30 +44,18 @@ function closeCustomAlert() {
     if (modal) modal.classList.remove('alert-show');
 }
 
-// Feedback Modal Handlers
-function openFeedbackModal() {
-    const modal = getEl('feedback-modal');
-    if (modal) modal.classList.add('modal-show');
-}
-
-function closeFeedbackModal() {
-    const modal = getEl('feedback-modal');
-    if (modal) modal.classList.remove('modal-show');
-}
-
-function submitFeedback(e) {
+function submitFeedbackTab(e) {
     e.preventDefault();
-    const typeEl = getEl('feedback-type');
-    const textEl = getEl('feedback-text');
+    const typeEl = getEl('feedback-tab-type');
+    const textEl = getEl('feedback-tab-text');
 
     if (!textEl || !textEl.value.trim()) return;
 
-    closeFeedbackModal();
     showAlert('ขอบคุณสำหรับข้อเสนอแนะ!', `เราได้รับข้อมูล (${typeEl.value}) เรียบร้อยแล้ว ขอบคุณที่ช่วยพัฒนาแอปครับ`, true);
     textEl.value = '';
 }
 
-// Update Active Tab Dynamic Sliding Elastic Line/Pill Position
+// Calibrated Active Tab Dynamic Elastic Pill Indicator (Prevents Overflow & Ensures Precision)
 function updateTabIndicator() {
     const activeBtn = document.querySelector('.tab-btn-active');
     const indicator = getEl('tab-indicator');
@@ -77,17 +65,23 @@ function updateTabIndicator() {
         const navRect = nav.getBoundingClientRect();
         const btnRect = activeBtn.getBoundingClientRect();
 
-        indicator.style.width = `${btnRect.width}px`;
-        indicator.style.left = `${btnRect.left - navRect.left}px`;
+        // Calculate bounded positions inside tab nav container
+        const calculatedLeft = btnRect.left - navRect.left;
+        const calculatedWidth = btnRect.width;
+
+        // Apply calibrated bounds
+        indicator.style.width = `${calculatedWidth}px`;
+        indicator.style.left = `${calculatedLeft}px`;
     }
 }
 
-// Tab Switching with Smooth Spring & Elastic Sliding Animation
+// Tab Switching with Smooth Elastic Animations (Supports 4 Top Tabs)
 function switchTab(tabName) {
     const tabs = {
         app: { content: getEl('tab-app'), btn: getEl('tab-app-btn') },
         summary: { content: getEl('tab-summary'), btn: getEl('tab-summary-btn') },
-        ai: { content: getEl('tab-ai'), btn: getEl('tab-ai-btn') }
+        ai: { content: getEl('tab-ai'), btn: getEl('tab-ai-btn') },
+        feedback: { content: getEl('tab-feedback'), btn: getEl('tab-feedback-btn') }
     };
 
     Object.keys(tabs).forEach(key => {
@@ -173,7 +167,6 @@ function addEntry() {
     entries.unshift(newEntry);
     saveData();
 
-    // Trigger Success Alert Dialog
     const typeText = currentType === 'income' ? 'รายรับ' : 'รายจ่าย';
     showAlert(
         `บันทึก${typeText}สำเร็จ!`, 
@@ -213,7 +206,6 @@ function renderApp() {
 
     const balance = income - expense;
 
-    // Render Balances
     const totalBalanceEl = getEl('total-balance');
     const totalIncomeEl = getEl('total-income');
     const totalExpenseEl = getEl('total-expense');
@@ -222,7 +214,6 @@ function renderApp() {
     if (totalIncomeEl) totalIncomeEl.textContent = `฿${income.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
     if (totalExpenseEl) totalExpenseEl.textContent = `฿${expense.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
 
-    // Render Transaction List
     const listContainer = getEl('transaction-list');
     if (listContainer) {
         if (entries.length === 0) {
@@ -336,7 +327,6 @@ function renderSummaryTab() {
     if (dailyAvg) dailyAvg.textContent = `฿${avg.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
     if (totalCountText) totalCountText.textContent = `${filteredEntries.length} รายการ`;
 
-    // Category Breakdown rendering
     const catContainer = getEl('category-breakdown-list');
     if (catContainer) {
         const sortedCategories = Object.keys(categoryTotals).sort((a, b) => categoryTotals[b] - categoryTotals[a]);
