@@ -1,6 +1,5 @@
 // --- STATE MANAGEMENT ---
 let entries = JSON.parse(localStorage.getItem('ledger_entries') || '[]');
-let budgetGoal = parseFloat(localStorage.getItem('budget_goal') || '10000');
 let currentType = 'income'; // Default to income first
 let summaryFilter = 'all';
 
@@ -15,6 +14,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function getEl(id) {
     return document.getElementById(id);
+}
+
+// Custom Alert Dialog Trigger
+function showAlert(title, message, isSuccess = true) {
+    const modal = getEl('custom-alert');
+    const titleEl = getEl('alert-title');
+    const msgEl = getEl('alert-message');
+    const iconContainer = getEl('alert-icon-container');
+
+    if (!modal || !titleEl || !msgEl || !iconContainer) return;
+
+    titleEl.textContent = title;
+    msgEl.textContent = message;
+
+    if (isSuccess) {
+        iconContainer.className = "w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl shadow-inner";
+        iconContainer.textContent = "✓";
+    } else {
+        iconContainer.className = "w-14 h-14 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-2xl shadow-inner";
+        iconContainer.textContent = "⚠️";
+    }
+
+    modal.classList.add('alert-show');
+}
+
+function closeCustomAlert() {
+    const modal = getEl('custom-alert');
+    if (modal) modal.classList.remove('alert-show');
 }
 
 // Update Active Tab Dynamic Sliding Line/Pill Position
@@ -74,7 +101,6 @@ function setDefaultDate() {
 
 function saveData() {
     localStorage.setItem('ledger_entries', JSON.stringify(entries));
-    localStorage.setItem('budget_goal', budgetGoal.toString());
     renderApp();
 }
 
@@ -94,14 +120,6 @@ function setEntryType(type) {
     }
 }
 
-function setBudgetGoalPrompt() {
-    const val = prompt('กำหนดเป้าหมายงบประมาณรายจ่ายประจำเดือน (บาท):', budgetGoal);
-    if (val !== null && !isNaN(parseFloat(val)) && parseFloat(val) > 0) {
-        budgetGoal = parseFloat(val);
-        saveData();
-    }
-}
-
 function addEntry() {
     const dateInput = getEl('entry-date');
     const categoryInput = getEl('entry-category');
@@ -116,7 +134,7 @@ function addEntry() {
     const dateVal = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().split('T')[0];
 
     if (!desc || isNaN(amount) || amount <= 0) {
-        showCustomAlert('กรุณากรอกรายละเอียดและจำนวนเงินให้ถูกต้อง');
+        showAlert('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกรายละเอียดและจำนวนเงินให้ถูกต้อง', false);
         return;
     }
 
@@ -131,6 +149,14 @@ function addEntry() {
 
     entries.unshift(newEntry);
     saveData();
+
+    // Trigger Success Alert Dialog
+    const typeText = currentType === 'income' ? 'รายรับ' : 'รายจ่าย';
+    showAlert(
+        `บันทึก${typeText}สำเร็จ!`, 
+        `รายการ "${desc}" จำนวน ฿${amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })} ถูกบันทึกเรียบร้อยแล้ว`, 
+        true
+    );
 
     descInput.value = '';
     amountInput.value = '';
@@ -152,8 +178,6 @@ function clearAllData() {
 function renderApp() {
     let income = 0;
     let expense = 0;
-    let currentMonthExpense = 0;
-    const currentMonthStr = new Date().toISOString().slice(0, 7);
 
     entries.forEach(item => {
         const val = Number(item.amount) || 0;
@@ -161,9 +185,6 @@ function renderApp() {
             income += val;
         } else {
             expense += val;
-            if (item.date && item.date.startsWith(currentMonthStr)) {
-                currentMonthExpense += val;
-            }
         }
     });
 
@@ -177,27 +198,6 @@ function renderApp() {
     if (totalBalanceEl) totalBalanceEl.textContent = `฿${balance.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
     if (totalIncomeEl) totalIncomeEl.textContent = `฿${income.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
     if (totalExpenseEl) totalExpenseEl.textContent = `฿${expense.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
-
-    // Render Budget Progress Bar
-    const budgetProgressBar = getEl('budget-progress-bar');
-    const budgetSpentText = getEl('budget-spent-text');
-    const budgetLimitText = getEl('budget-limit-text');
-
-    if (budgetProgressBar && budgetSpentText && budgetLimitText) {
-        const pct = budgetGoal > 0 ? Math.min((currentMonthExpense / budgetGoal) * 100, 100) : 0;
-        budgetProgressBar.style.width = `${pct}%`;
-
-        if (pct >= 100) {
-            budgetProgressBar.className = "bg-rose-500 h-full rounded-full transition-all duration-500";
-        } else if (pct >= 80) {
-            budgetProgressBar.className = "bg-amber-400 h-full rounded-full transition-all duration-500";
-        } else {
-            budgetProgressBar.className = "bg-gradient-to-r from-[#6E5BFF] to-[#38C6FF] h-full rounded-full transition-all duration-500";
-        }
-
-        budgetSpentText.textContent = `ใช้ไป ฿${currentMonthExpense.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
-        budgetLimitText.textContent = `งบ ฿${budgetGoal.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
-    }
 
     // Render Transaction List
     const listContainer = getEl('transaction-list');
@@ -366,8 +366,7 @@ async function sendChatMessage(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 prompt: userText,
-                records: entries,
-                budgetGoal: budgetGoal
+                records: entries
             })
         });
 
@@ -415,10 +414,6 @@ function escapeHtml(str) {
     return str.replace(/[&<>"']/g, function(m) {
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
     });
-}
-
-function showCustomAlert(msg) {
-    alert(msg);
 }
 
 function registerServiceWorker() {

@@ -77,25 +77,7 @@
                 </div>
             </section>
 
-            <!-- Monthly Budget Status Card -->
-            <section class="bg-[#16181a] p-5 rounded-3xl border border-[#272a2e] flex flex-col gap-3 shadow-lg">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <span class="text-sm">🎯</span>
-                        <h2 class="text-xs md:text-sm font-semibold text-[#f0f2f5]">งบประมาณรายจ่ายเดือนนี้</h2>
-                    </div>
-                    <button onclick="setBudgetGoalPrompt()" class="text-xs text-[#38C6FF] hover:underline font-medium">ตั้งเป้าหมาย</button>
-                </div>
-                <div class="w-full bg-[#0c0d0e] rounded-full h-3 flex overflow-hidden border border-[#272a2e] p-0.5">
-                    <div id="budget-progress-bar" class="bg-gradient-to-r from-[#6E5BFF] to-[#38C6FF] h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
-                </div>
-                <div class="flex justify-between text-xs font-mono">
-                    <span id="budget-spent-text" class="text-[#9ca3af]">ใช้ไป ฿0.00</span>
-                    <span id="budget-limit-text" class="text-[#f0f2f5]">งบ ฿0.00</span>
-                </div>
-            </section>
-
-            <!-- Input Form (Income First & Category Selection) -->
+            <!-- Input Form (Income First & Custom Dialog Selectors) -->
             <section class="bg-[#16181a] p-5 md:p-6 rounded-3xl border border-[#272a2e] flex flex-col gap-4 shadow-lg">
                 <div class="flex items-center justify-between">
                     <h2 class="text-sm font-semibold text-[#f0f2f5]">บันทึกรายการใหม่</h2>
@@ -105,14 +87,19 @@
                 <div class="flex flex-col gap-3.5">
                     <!-- Date & Type Row -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Custom Date Picker Trigger Field -->
                         <div>
                             <label class="text-xs text-[#9ca3af] mb-1 block">วันที่บันทึก</label>
-                            <input 
-                                type="date" 
-                                id="entry-date" 
-                                class="w-full bg-[#0c0d0e] border border-[#272a2e] rounded-xl px-3.5 py-2.5 text-xs text-[#f0f2f5] focus:outline-none focus:border-[#9ca3af] transition"
-                            >
+                            <div class="relative">
+                                <input 
+                                    type="date" 
+                                    id="entry-date" 
+                                    class="custom-dialog-trigger w-full bg-[#0c0d0e] border border-[#272a2e] rounded-xl px-3.5 py-2.5 text-xs text-[#f0f2f5] focus:outline-none focus:border-[#6E5BFF] transition cursor-pointer"
+                                >
+                            </div>
                         </div>
+
+                        <!-- Entry Type Selector -->
                         <div>
                             <label class="text-xs text-[#9ca3af] mb-1 block">ประเภทรายการ</label>
                             <div class="flex gap-1.5 bg-[#0c0d0e] p-1 rounded-xl border border-[#272a2e]">
@@ -126,10 +113,10 @@
                         </div>
                     </div>
 
-                    <!-- Category Selector with Icons -->
+                    <!-- Custom Category Select Dropdown -->
                     <div>
                         <label class="text-xs text-[#9ca3af] mb-1 block">หมวดหมู่</label>
-                        <select id="entry-category" class="w-full bg-[#0c0d0e] border border-[#272a2e] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-[#f0f2f5] focus:outline-none focus:border-[#9ca3af] transition">
+                        <select id="entry-category" class="custom-dialog-trigger w-full bg-[#0c0d0e] border border-[#272a2e] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-[#f0f2f5] focus:outline-none focus:border-[#6E5BFF] transition cursor-pointer">
                             <option value="🍱 อาหาร">🍱 อาหาร / เครื่องดื่ม</option>
                             <option value="🚗 เดินทาง">🚗 การเดินทาง / น้ำมัน</option>
                             <option value="🛍️ ช้อปปิ้ง">🛍️ ช้อปปิ้ง / ของใช้</option>
@@ -148,7 +135,7 @@
                             type="text" 
                             id="entry-desc" 
                             placeholder="รายละเอียด เช่น ข้าวมันไก่, ค่าน้ำมัน" 
-                            class="w-full bg-[#0c0d0e] border border-[#272a2e] rounded-xl px-4 py-2.5 text-xs md:text-sm text-[#f0f2f5] focus:outline-none focus:border-[#9ca3af] transition"
+                            class="w-full bg-[#0c0d0e] border border-[#272a2e] rounded-xl px-4 py-2.5 text-xs md:text-sm text-[#f0f2f5] focus:outline-none focus:border-[#6E5BFF] transition"
                         >
                     </div>
 
@@ -159,7 +146,7 @@
                             id="entry-amount" 
                             placeholder="0.00" 
                             step="any"
-                            class="w-full bg-[#0c0d0e] border border-[#272a2e] rounded-xl pl-4 pr-14 py-2.5 text-sm text-[#f0f2f5] font-mono focus:outline-none focus:border-[#9ca3af] transition"
+                            class="w-full bg-[#0c0d0e] border border-[#272a2e] rounded-xl pl-4 pr-14 py-2.5 text-sm text-[#f0f2f5] font-mono focus:outline-none focus:border-[#6E5BFF] transition"
                         >
                         <span class="absolute right-4 top-2.5 text-xs font-medium text-[#9ca3af]">THB</span>
                     </div>
@@ -167,9 +154,9 @@
                     <!-- Submit Button -->
                     <button 
                         onclick="addEntry()" 
-                        class="mt-1 bg-[#f0f2f5] text-[#0c0d0e] font-semibold py-3 rounded-xl text-xs md:text-sm hover:bg-white active:scale-[0.99] transition shadow-md shadow-white/5"
+                        class="mt-1 bg-[#f0f2f5] text-[#0c0d0e] font-semibold py-3 rounded-xl text-xs md:text-sm hover:bg-white active:scale-[0.99] transition shadow-md shadow-white/5 flex items-center justify-center gap-2"
                     >
-                        บันทึกรายการ
+                        <span>บันทึกรายการ</span>
                     </button>
                 </div>
             </section>
@@ -252,7 +239,7 @@
             <!-- Chat Window -->
             <div id="chat-box" class="bg-[#16181a] border border-[#272a2e] rounded-3xl p-4 h-[420px] overflow-y-auto flex flex-col gap-3 text-xs md:text-sm shadow-inner">
                 <div class="bg-[#272a2e]/60 text-[#f0f2f5] p-3.5 rounded-2xl max-w-[85%] self-start border border-white/5 leading-relaxed">
-                    สวัสดีครับ! ผมคือผู้ช่วย AI ประจำแอป สามารถสอบถามสรุปหมวดหมู่ค่าใช้จ่าย งบประมาณคงเหลือ หรือให้ช่วยวิเคราะห์พฤติกรรมการใช้จ่ายได้เลยครับ
+                    สวัสดีครับ! ผมคือผู้ช่วย AI ประจำแอป สามารถสอบถามสรุปหมวดหมู่ค่าใช้จ่าย ยอดเงินคงเหลือ หรือให้ช่วยวิเคราะห์พฤติกรรมการใช้จ่ายได้เลยครับ
                 </div>
             </div>
 
@@ -279,6 +266,25 @@
             <div>My Money App &bull; Powered by Cloudflare & Gemini AI</div>
         </footer>
 
+    </div>
+
+    <!-- CUSTOM ALERT DIALOG MODAL -->
+    <div id="custom-alert" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-[#16181a] border border-[#272a2e] w-full max-w-sm rounded-3xl p-6 shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col items-center text-center gap-4">
+            <div id="alert-icon-container" class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl shadow-inner">
+                ✓
+            </div>
+            <div>
+                <h3 id="alert-title" class="text-base font-semibold text-[#f0f2f5]">บันทึกสำเร็จ!</h3>
+                <p id="alert-message" class="text-xs text-[#9ca3af] mt-1 leading-relaxed">บันทึกรายการเรียบร้อยแล้ว</p>
+            </div>
+            <button 
+                onclick="closeCustomAlert()" 
+                class="w-full py-2.5 bg-[#f0f2f5] text-[#0c0d0e] font-semibold rounded-xl text-xs md:text-sm hover:bg-white active:scale-95 transition"
+            >
+                ตกลง
+            </button>
+        </div>
     </div>
 
     <script src="app.js" defer></script>

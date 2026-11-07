@@ -18,6 +18,33 @@ z-index: 10;
 color: #f0f2f5 !important;
 font-weight: 600;
 }
+/* Custom Interactive Dialog Trigger Styles for Date & Category */
+.custom-dialog-trigger {
+box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.custom-dialog-trigger:focus,
+.custom-dialog-trigger:active {
+box-shadow: 0 0 0 2px rgba(110, 91, 255, 0.35);
+background-color: #121316;
+}
+/* Custom Date Picker Calendar Invert for Dark Theme */
+input[type="date"]::-webkit-calendar-picker-indicator {
+filter: invert(0.8);
+cursor: pointer;
+opacity: 0.7;
+transition: opacity 0.2s;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+opacity: 1;
+}
+/* Custom Alert Dialog Animation */
+#custom-alert.alert-show {
+opacity: 1;
+pointer-events: auto;
+}
+#custom-alert.alert-show > div {
+transform: scale(1);
+}
 /* Smooth Tab Content Elastic Animations */
 .tab-content {
 opacity: 1;
