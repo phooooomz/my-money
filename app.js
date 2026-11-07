@@ -239,83 +239,43 @@ function escapeHtml(str) {
     });
 }
 
-// Notification Toggle & Service Worker Logic
+// Service Worker & Test Notification Trigger
 async function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         try {
             await navigator.serviceWorker.register('/sw.js');
         } catch (err) {
-            console.log('SW Registration bypassed:', err);
+            console.log('SW bypassed:', err);
         }
-    }
-    updateNotifyButton();
-}
-
-async function toggleNotifications() {
-    if (!('Notification' in window)) {
-        alert('เบราว์เซอร์นี้ไม่รองรับระบบการแจ้งเตือนครับ');
-        return;
-    }
-
-    // Checking permission state
-    if (Notification.permission === 'denied') {
-        alert("⚠️ การแจ้งเตือนถูกบล็อกอยู่!\n\nโปรดไปที่การตั้งค่าเบราว์เซอร์ของคุณ:\n1. กดที่ไอคอน รูปแม่กุญแจ 🔒 หรือรูปตั้งค่า ข้างแถบใส่ URL ด้านบน\n2. เลือกที่ 'การตั้งค่าเว็บไซต์' (Site Settings) หรือ 'การแจ้งเตือน'\n3. เปลี่ยนจาก 'บล็อก' ให้เป็น 'อนุญาต' (Allow)");
-        return;
-    }
-
-    try {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            updateNotifyButton();
-            triggerTestNotification();
-        } else if (permission === 'denied') {
-            alert("คุณได้ปฏิเสธการรับแจ้งเตือน หากต้องการเปิดใช้งานย้อนหลัง โปรดเปิดสิทธิ์ในการตั้งค่าเบราว์เซอร์");
-            updateNotifyButton();
-        }
-    } catch (e) {
-        alert("ไม่สามารถเปิดแจ้งเตือนได้: " + (e.message || "เกิดข้อผิดพลาด"));
     }
 }
 
-function triggerTestNotification() {
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+async function testNotificationNow() {
+    if (!("Notification" in window)) {
+        alert("เบราว์เซอร์ของคุณไม่รองรับ Notification");
+        return;
+    }
 
-    const title = "🔔 ระบบบันทึกบัญชี";
-    const options = {
-        body: "เปิดใช้งานระบบแจ้งเตือนสรุปประจำวัน (18:00 น.) เรียบร้อยแล้ว!",
-        icon: "/icon-192.png"
-    };
+    // ขออนุญาตอัตโนมัติหากยังไม่ได้กด
+    let perm = Notification.permission;
+    if (perm === 'default') {
+        perm = await Notification.requestPermission();
+    }
 
-    try {
-        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-            navigator.serviceWorker.ready.then(reg => {
-                reg.showNotification(title, options);
-            }).catch(() => {
-                new Notification(title, options);
+    if (perm === 'granted') {
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+            const reg = await navigator.serviceWorker.ready;
+            reg.showNotification("🔔 ทดสอบการแจ้งเตือน (18:00 น.)", {
+                body: "ระบบพร้อมส่งสรุปยอดรายวัน/รายสัปดาห์ ให้คุณตามกำหนดเวลาเรียบร้อยแล้ว!",
+                icon: "/icon-192.png"
             });
         } else {
-            new Notification(title, options);
+            new Notification("🔔 ทดสอบการแจ้งเตือน (18:00 น.)", {
+                body: "ระบบพร้อมส่งสรุปยอดรายวัน/รายสัปดาห์ ให้คุณตามกำหนดเวลาเรียบร้อยแล้ว!"
+            });
         }
-    } catch (e) {
-        console.log('Notification trigger fallback:', e);
-    }
-}
-
-function updateNotifyButton() {
-    const btn = getEl('notify-btn');
-    const testBtn = getEl('test-notify-btn');
-    if (!btn) return;
-
-    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        btn.textContent = 'เปิดใช้งานแล้ว';
-        btn.onclick = triggerTestNotification;
-        btn.className = 'px-3 py-1 rounded-md bg-emerald-950/60 border border-emerald-800 text-emerald-400 font-medium text-xs cursor-pointer hover:bg-emerald-900/60 transition';
-        if (testBtn) testBtn.classList.remove('hidden');
     } else {
-        btn.textContent = 'เปิดแจ้งเตือน';
-        btn.onclick = toggleNotifications;
-        btn.className = 'px-3 py-1 rounded-md bg-[#0c0d0e] border border-[#272a2e] text-[#9ca3af] hover:text-[#f0f2f5] transition cursor-pointer';
-        if (testBtn) testBtn.classList.add('hidden');
+        alert("โปรดกดอนุญาตการแจ้งเตือนในตั้งค่าเบราว์เซอร์ (รูปแม่กุญแจ 🔒 ด้านบน URL) ก่อนทดสอบครับ");
     }
 }
 
