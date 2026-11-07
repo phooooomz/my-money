@@ -19,6 +19,12 @@ document.addEventListener('DOMContentLoaded', () => {
     renderApp();
     registerServiceWorker();
     setupNetworkListeners();
+    syncSummarySnapshot();
+    renderNotifyUI();
+    startReminderLoop();
+    document.addEventListener('keydown', ev => {
+        if (ev.key === 'Escape') { closeNotifyModal(); closeCustomAlert(); }
+    });
     // Ensure initial tab highlight is rendered reliably
     setTimeout(updateTabIndicator, 50);
     setTimeout(updateTabIndicator, 300);
@@ -142,6 +148,7 @@ function saveData() {
     } catch (e) {
         showAlert('บันทึกไม่สำเร็จ', 'พื้นที่เก็บข้อมูลในเบราว์เซอร์เต็มหรือถูกปิดการใช้งาน', false);
     }
+    syncSummarySnapshot();
     renderApp();
 }
 
@@ -200,12 +207,14 @@ function addEntry() {
 function deleteEntry(id) {
     entries = entries.filter(item => item.id !== id);
     saveData();
+    showToast('ลบรายการแล้ว', 'info', 2200);
 }
 
 function clearAllData() {
     if (confirm('คุณต้องการลบข้อมูลรายการทั้งหมดใช่หรือไม่?')) {
         entries = [];
         saveData();
+        showToast('ลบข้อมูลทั้งหมดแล้ว', 'info', 2500);
     }
 }
 
@@ -354,60 +363,147 @@ function renderSummaryTab() {
 }
 
 // --- AI CHAT ---
+let chatBusy = false;
+
+function prefersReducedMotion() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function scrollChat() {
+    const chatBox = getEl('chat-box');
+    if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+}
+
 async function sendChatMessage(e) {
     if (e) e.preventDefault();
     const chatInput = getEl('chat-input');
     const chatBox = getEl('chat-box');
     const sendBtn = getEl('chat-send-btn');
-    if (!chatInput || !chatBox) return;
+    if (!chatInput || !chatBox || chatBusy) return;
 
     const userText = chatInput.value.trim();
     if (!userText) return;
 
+    chatBusy = true;
     appendChatMessage('user', userText);
     chatInput.value = '';
     if (sendBtn) sendBtn.disabled = true;
 
     const loadingId = 'loading-' + Date.now();
-    appendChatMessage('ai', 'กำลังคิดคำตอบ...', loadingId);
+    appendTypingIndicator(loadingId);
 
     try {
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt: userText,
-                records: entries
-            })
-        });
-        const data = await response.json();
-        removeMessage(loadingId);
-        if (data.reply) {
-            appendChatMessage('ai', data.reply);
-        } else {
-            appendChatMessage('ai', 'เกิดข้อผิดพลาด: ' + (data.error || 'ไม่สามารถรับข้อมูลได้'));
+        let reply = null;
+        let errorText = null;
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt: userText,
+                    records: entries
+                })
+            });
+            const data = await response.json();
+            if (data.reply) {
+                reply = data.reply;
+            } else {
+                errorText = 'เกิดข้อผิดพลาด: ' + (data.error || 'ไม่สามารถรับข้อมูลได้');
+            }
+        } catch (err) {
+            errorText = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
         }
-    } catch (err) {
+
         removeMessage(loadingId);
-        appendChatMessage('ai', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+        if (reply) {
+            notifyAiReply(reply);
+            await typeChatMessage(reply);
+        } else {
+            appendChatMessage('ai', errorText);
+        }
     } finally {
+        removeMessage(loadingId);
+        chatBusy = false;
         if (sendBtn) sendBtn.disabled = false;
     }
 }
 
 function appendChatMessage(sender, text, id = null) {
     const chatBox = getEl('chat-box');
-    if (!chatBox) return;
+    if (!chatBox) return null;
     const msgDiv = document.createElement('div');
     if (id) msgDiv.id = id;
     if (sender === 'user') {
-        msgDiv.className = 'bg-[#f0f2f5] text-[#0c0d0e] p-3.5 rounded-2xl max-w-[85%] self-end font-medium shadow-sm';
+        msgDiv.className = 'chat-msg-in chat-msg-user bg-[#f0f2f5] text-[#0c0d0e] p-3.5 rounded-2xl max-w-[85%] self-end font-medium shadow-sm';
     } else {
-        msgDiv.className = 'bg-[#272a2e]/60 text-[#f0f2f5] p-3.5 rounded-2xl max-w-[85%] self-start border border-white/5 whitespace-pre-wrap leading-relaxed';
+        msgDiv.className = 'chat-msg-in chat-msg-ai bg-[#272a2e]/60 text-[#f0f2f5] p-3.5 rounded-2xl max-w-[85%] self-start border border-white/5 whitespace-pre-wrap leading-relaxed';
     }
     msgDiv.textContent = text;
     chatBox.appendChild(msgDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    scrollChat();
+    return msgDiv;
+}
+
+// จุดสามจุดเด้งๆ ขณะรอ AI ตอบ
+function appendTypingIndicator(id) {
+    const chatBox = getEl('chat-box');
+    if (!chatBox) return;
+    const msgDiv = document.createElement('div');
+    msgDiv.id = id;
+    msgDiv.setAttribute('aria-label', 'AI กำลังพิมพ์');
+    msgDiv.className = 'chat-msg-in chat-msg-ai bg-[#272a2e]/60 text-[#f0f2f5] px-4 py-3.5 rounded-2xl self-start border border-white/5';
+    msgDiv.innerHTML = '<span class="typing-dots"><span></span><span></span><span></span></span>';
+    chatBox.appendChild(msgDiv);
+    scrollChat();
+}
+
+// ข้อความ AI ค่อยๆ พิมพ์ออกมาทีละตัว (เวลารวมไม่เกิน ~3 วินาที)
+function typeChatMessage(text) {
+    return new Promise(resolve => {
+        const el = appendChatMessage('ai', '');
+        if (!el) return resolve(null);
+        if (prefersReducedMotion() || document.hidden || text.length < 2) {
+            el.textContent = text;
+            scrollChat();
+            return resolve(el);
+        }
+        const chars = Array.from(text);
+        const total = chars.length;
+        const duration = Math.min(3000, Math.max(600, total * 18));
+        const start = performance.now();
+        el.classList.add('type-caret');
+        function frame(now) {
+            const progress = Math.min(1, (now - start) / duration);
+            if (progress < 1) {
+                el.textContent = chars.slice(0, Math.floor(total * progress)).join('');
+                scrollChat();
+                requestAnimationFrame(frame);
+            } else {
+                el.textContent = text;
+                el.classList.remove('type-caret');
+                scrollChat();
+                resolve(el);
+            }
+        }
+        requestAnimationFrame(frame);
+    });
+}
+
+function isAiTabVisible() {
+    const t = getEl('tab-ai');
+    return !!t && !t.classList.contains('tab-hidden');
+}
+
+// แจ้งผู้ใช้เมื่อ AI ตอบ ในกรณีที่ไม่ได้ดูหน้าแชตอยู่
+function notifyAiReply(text) {
+    const preview = String(text).replace(/\s+/g, ' ').slice(0, 90);
+    if (document.hidden) {
+        if (notifySettings.enabled) showSystemNotification('🤖 AI ตอบแล้ว', preview, 'ai-reply');
+        return;
+    }
+    if (!isAiTabVisible()) {
+        showToast('🤖 AI ตอบแล้ว แตะเพื่อดูคำตอบ', 'info', 4500, () => switchTab('ai'));
+    }
 }
 
 function removeMessage(id) {
@@ -439,7 +535,367 @@ function setupNetworkListeners() {
             statusText.textContent = "Offline";
         }
     };
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
+    window.addEventListener('online', () => { updateOnlineStatus(); showToast('กลับมาออนไลน์แล้ว', 'success'); });
+    window.addEventListener('offline', () => { updateOnlineStatus(); showToast('ออฟไลน์อยู่ ใช้ AI ไม่ได้ แต่ยังบันทึกบัญชีได้', 'error', 4000); });
     updateOnlineStatus();
+}
+
+// --- TOAST NOTIFICATIONS ---
+function showToast(message, type = 'info', duration = 3200, onClick = null) {
+    const container = getEl('toast-container');
+    if (!container) return;
+
+    const styles = {
+        success: { icon: '✓', border: 'border-emerald-500/30', color: 'text-emerald-400' },
+        error: { icon: '⚠️', border: 'border-rose-500/30', color: 'text-rose-400' },
+        info: { icon: '🔔', border: 'border-[#38C6FF]/30', color: 'text-[#38C6FF]' }
+    };
+    const st = styles[type] || styles.info;
+
+    // แสดงพร้อมกันไม่เกิน 3 อัน
+    while (container.children.length >= 3) container.firstElementChild.remove();
+
+    const toast = document.createElement('div');
+    toast.className = `toast-in pointer-events-auto flex items-center gap-3 bg-[#16181a]/95 backdrop-blur border ${st.border} rounded-2xl px-4 py-3 shadow-2xl text-xs ${onClick ? 'cursor-pointer' : ''}`;
+    const icon = document.createElement('span');
+    icon.className = `text-base ${st.color}`;
+    icon.textContent = st.icon;
+    const msg = document.createElement('span');
+    msg.className = 'text-[#f0f2f5] leading-relaxed';
+    msg.textContent = message;
+    toast.append(icon, msg);
+
+    let closed = false;
+    const dismiss = () => {
+        if (closed) return;
+        closed = true;
+        toast.classList.remove('toast-in');
+        toast.classList.add('toast-out');
+        setTimeout(() => toast.remove(), 250);
+    };
+    toast.addEventListener('click', () => {
+        if (onClick) onClick();
+        dismiss();
+    });
+    container.appendChild(toast);
+    setTimeout(dismiss, duration);
+}
+
+// --- BROWSER NOTIFICATIONS (ทำงานบนอุปกรณ์นี้) ---
+const NOTIFY_KEY = 'notify_settings';
+
+function loadNotifySettings() {
+    const defaults = { enabled: false, push: false, time: '18:00', lastSent: '' };
+    try {
+        const raw = JSON.parse(localStorage.getItem(NOTIFY_KEY) || '{}');
+        return { ...defaults, ...(raw && typeof raw === 'object' ? raw : {}) };
+    } catch (e) {
+        return defaults;
+    }
+}
+
+let notifySettings = loadNotifySettings();
+
+function saveNotifySettings() {
+    try {
+        localStorage.setItem(NOTIFY_KEY, JSON.stringify(notifySettings));
+    } catch (e) { /* ignore */ }
+}
+
+function notificationsSupported() {
+    return 'Notification' in window;
+}
+
+async function showSystemNotification(title, body, tag = 'my-money') {
+    if (!notificationsSupported() || Notification.permission !== 'granted') return false;
+    const options = { body, icon: '/icon-192.png', badge: '/icon-192.png', tag, renotify: true, data: { url: '/' } };
+    try {
+        // มือถือ Android ต้องแสดงผ่าน Service Worker
+        if ('serviceWorker' in navigator) {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (reg) {
+                await reg.showNotification(title, options);
+                return true;
+            }
+        }
+        new Notification(title, options);
+        return true;
+    } catch (e) {
+        console.log('Notification failed:', e);
+        return false;
+    }
+}
+
+function buildDailySummary() {
+    const todayStr = localDateStr();
+    const todays = entries.filter(e => e.date === todayStr);
+    if (todays.length === 0) {
+        return { title: '📝 อย่าลืมบันทึกบัญชีวันนี้', body: 'วันนี้ยังไม่มีรายการ แตะเพื่อเริ่มบันทึกได้เลย' };
+    }
+    let income = 0;
+    let expense = 0;
+    todays.forEach(e => {
+        const v = Number(e.amount) || 0;
+        if (e.type === 'income') income += v; else expense += v;
+    });
+    return {
+        title: '📊 สรุปบัญชีวันนี้',
+        body: `รายรับ ${fmtMoney(income)} • รายจ่าย ${fmtMoney(expense)} • คงเหลือ ${fmtMoney(income - expense)} (${todays.length} รายการ)`
+    };
+}
+
+function reminderDueDate(now = new Date()) {
+    const [h, m] = String(notifySettings.time || '18:00').split(':').map(Number);
+    const due = new Date(now);
+    due.setHours(h || 0, m || 0, 0, 0);
+    return due;
+}
+
+// ตั้งฐานเวลาใหม่: ถ้าเวลาเตือนวันนี้ผ่านไปแล้ว ให้เริ่มเตือนครั้งแรกวันพรุ่งนี้ (กันเด้งทันทีตอนเปิดใช้งาน)
+function resetReminderBaseline() {
+    const now = new Date();
+    notifySettings.lastSent = now >= reminderDueDate(now) ? localDateStr(now) : '';
+}
+
+async function checkDailyReminder() {
+    if (!notifySettings.enabled || notifySettings.push || !notificationsSupported() || Notification.permission !== 'granted') return;
+    const now = new Date();
+    const today = localDateStr(now);
+    if (notifySettings.lastSent === today || now < reminderDueDate(now)) return;
+    notifySettings.lastSent = today;
+    saveNotifySettings();
+    const summary = buildDailySummary();
+    await showSystemNotification(summary.title, summary.body, 'daily-summary');
+}
+
+function startReminderLoop() {
+    checkDailyReminder();
+    setInterval(checkDailyReminder, 30000);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) checkDailyReminder();
+    });
+    // ซิงก์การสมัคร Push กับเซิร์ฟเวอร์ (และอัปเกรดจากโหมดในเครื่องอัตโนมัติ ถ้าตั้งค่าเซิร์ฟเวอร์เสร็จแล้ว)
+    if (notifySettings.enabled && pushSupported() && Notification.permission === 'granted') {
+        subscribePush(!notifySettings.push).then(ok => {
+            if (ok && !notifySettings.push) {
+                notifySettings.push = true;
+                saveNotifySettings();
+                renderNotifyUI();
+            }
+        });
+    }
+}
+
+function renderNotifyUI() {
+    const supported = notificationsSupported();
+    const granted = supported && Notification.permission === 'granted';
+    const active = notifySettings.enabled && granted;
+
+    const toggle = getEl('notify-toggle');
+    const timeInput = getEl('notify-time');
+    const status = getEl('notify-status');
+    const bellIcon = getEl('notify-bell-icon');
+    const bellDot = getEl('notify-bell-dot');
+
+    if (toggle) toggle.setAttribute('aria-checked', active ? 'true' : 'false');
+    if (timeInput) {
+        timeInput.value = notifySettings.time;
+        timeInput.disabled = !active;
+        timeInput.classList.toggle('opacity-50', !active);
+    }
+    if (status) {
+        if (!supported) status.textContent = 'เบราว์เซอร์นี้ไม่รองรับ';
+        else if (Notification.permission === 'denied') status.textContent = 'ถูกบล็อก (เปิดได้ที่ตั้งค่าเว็บไซต์ของเบราว์เซอร์)';
+        else status.textContent = active
+            ? `เปิดอยู่ • เตือนทุกวัน ${notifySettings.time} น.${notifySettings.push ? ' • Push' : ''}`
+            : 'ปิดอยู่';
+    }
+    const note = getEl('notify-note');
+    if (note) {
+        note.textContent = active && notifySettings.push
+            ? 'ส่งผ่านเซิร์ฟเวอร์ (Web Push) จึงเตือนได้แม้ปิดแอป ตัวเลขสรุปคำนวณบนเครื่องของคุณ ไม่ถูกส่งออกไป'
+            : 'โหมดในเครื่อง: เตือนเมื่อแอปเปิดอยู่ (รวมถึงอยู่เบื้องหลัง) หากปิดแอปไปแล้วจะเตือนเมื่อเปิดแอปครั้งถัดไป';
+    }
+    if (bellIcon) bellIcon.textContent = active ? '🔔' : '🔕';
+    if (bellDot) bellDot.classList.toggle('hidden', !active);
+}
+
+let notifyBusy = false;
+
+async function toggleNotifications() {
+    if (notifyBusy) return;
+    notifyBusy = true;
+    try {
+        if (notifySettings.enabled) {
+            notifySettings.enabled = false;
+            notifySettings.push = false;
+            saveNotifySettings();
+            renderNotifyUI();
+            unsubscribePush();
+            showToast('ปิดการแจ้งเตือนแล้ว', 'info', 2200);
+            return;
+        }
+        if (!notificationsSupported()) {
+            showToast('เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน (บน iPhone ต้องกด "เพิ่มไปยังหน้าจอโฮม" ก่อน)', 'error', 5500);
+            return;
+        }
+        let perm = Notification.permission;
+        if (perm === 'default') {
+            try { perm = await Notification.requestPermission(); } catch (e) { /* ignore */ }
+        }
+        if (perm !== 'granted') {
+            renderNotifyUI();
+            showToast(perm === 'denied'
+                ? 'การแจ้งเตือนถูกบล็อก กรุณาเปิดที่ตั้งค่าเว็บไซต์ของเบราว์เซอร์'
+                : 'ยังไม่ได้อนุญาตการแจ้งเตือน', 'error', 5000);
+            return;
+        }
+        notifySettings.enabled = true;
+        resetReminderBaseline();
+        const pushOk = pushSupported() ? await subscribePush(true) : false;
+        notifySettings.push = pushOk;
+        saveNotifySettings();
+        renderNotifyUI();
+        showToast(pushOk
+            ? `เปิดแล้ว เตือนทุกวัน ${notifySettings.time} น. แม้ปิดแอป`
+            : `เปิดแล้ว (โหมดในเครื่อง) เตือนทุกวัน ${notifySettings.time} น. ขณะเปิดแอป`, 'success', pushOk ? 3200 : 5000);
+        const bell = getEl('notify-bell');
+        if (bell) {
+            bell.classList.remove('bell-ring');
+            void bell.offsetWidth;
+            bell.classList.add('bell-ring');
+        }
+    } finally {
+        notifyBusy = false;
+    }
+}
+
+async function setReminderTime(value) {
+    if (!/^\d{2}:\d{2}$/.test(value || '')) return;
+    notifySettings.time = value;
+    resetReminderBaseline();
+    saveNotifySettings();
+    renderNotifyUI();
+    showToast(`ตั้งเวลาเตือนเป็น ${value} น. แล้ว`, 'success', 2500);
+    if (notifySettings.enabled && notifySettings.push) {
+        const ok = await subscribePush(true);
+        if (!ok) showToast('อัปเดตเวลาไปที่เซิร์ฟเวอร์ไม่สำเร็จ จะลองใหม่เมื่อเปิดแอปครั้งหน้า', 'error', 4500);
+    }
+}
+
+async function sendTestNotification() {
+    if (!notificationsSupported() || Notification.permission !== 'granted') {
+        showToast('กรุณาเปิดการแจ้งเตือนก่อน', 'error');
+        return;
+    }
+    // โหมด Push: ให้เซิร์ฟเวอร์ส่งมาจริง เพื่อทดสอบทั้งระบบ
+    if (notifySettings.push && pushSupported()) {
+        try {
+            const reg = await navigator.serviceWorker.getRegistration();
+            const sub = reg && await reg.pushManager.getSubscription();
+            if (sub) {
+                const res = await fetch('/api/push', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ endpoint: sub.endpoint })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && data.ok) showToast('ส่ง Push ทดสอบแล้ว รอสักครู่...', 'success');
+                else showToast('Push ไม่สำเร็จ: ' + (data.error || res.status), 'error', 5500);
+                return;
+            }
+        } catch (e) { /* ใช้การทดสอบในเครื่องแทน */ }
+    }
+    const summary = buildDailySummary();
+    const ok = await showSystemNotification(summary.title, summary.body, 'test');
+    showToast(ok ? 'ส่งการแจ้งเตือนทดสอบแล้ว' : 'ส่งการแจ้งเตือนไม่สำเร็จ', ok ? 'success' : 'error');
+}
+
+// --- WEB PUSH (ผ่าน Cloudflare) ---
+function urlBase64ToUint8Array(b64) {
+    const padded = b64.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (b64.length % 4)) % 4);
+    return Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+}
+
+function pushSupported() {
+    return 'serviceWorker' in navigator && 'PushManager' in window && notificationsSupported();
+}
+
+async function getReadyRegistration() {
+    await navigator.serviceWorker.register('/sw.js');
+    return Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('service worker timeout')), 8000))
+    ]);
+}
+
+// สมัคร/อัปเดต Push กับเซิร์ฟเวอร์ คืน true ถ้าสำเร็จ
+async function subscribePush(withBaseline) {
+    if (!pushSupported()) return false;
+    try {
+        const reg = await getReadyRegistration();
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+            const keyRes = await fetch('/api/push');
+            if (!keyRes.ok) return false; // เซิร์ฟเวอร์ยังไม่ได้ตั้งค่า ใช้โหมดในเครื่องแทน
+            const { publicKey } = await keyRes.json();
+            sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(publicKey)
+            });
+        }
+        const payload = {
+            endpoint: sub.endpoint,
+            time: notifySettings.time,
+            tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Bangkok'
+        };
+        if (withBaseline) payload.lastSent = notifySettings.lastSent;
+        const res = await fetch('/api/push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        return res.ok;
+    } catch (e) {
+        console.log('Push subscribe failed:', e);
+        return false;
+    }
+}
+
+async function unsubscribePush() {
+    try {
+        if (!pushSupported()) return;
+        const reg = await navigator.serviceWorker.getRegistration();
+        const sub = reg && await reg.pushManager.getSubscription();
+        if (!sub) return;
+        await fetch('/api/push', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: sub.endpoint })
+        }).catch(() => {});
+        await sub.unsubscribe().catch(() => {});
+    } catch (e) {
+        console.log('Push unsubscribe failed:', e);
+    }
+}
+
+// เก็บสรุปรายการแบบย่อไว้ใน Cache Storage เพื่อให้ Service Worker สร้างข้อความ push ได้ (อยู่บนเครื่องเท่านั้น)
+async function syncSummarySnapshot() {
+    if (!('caches' in window)) return;
+    try {
+        const slim = entries.map(e => ({ date: e.date, type: e.type, amount: Number(e.amount) || 0 }));
+        const cache = await caches.open('my-money-data');
+        await cache.put('/__summary.json', new Response(JSON.stringify(slim), { headers: { 'Content-Type': 'application/json' } }));
+    } catch (e) { /* ignore */ }
+}
+
+function openNotifyModal() {
+    renderNotifyUI();
+    const modal = getEl('notify-modal');
+    if (modal) modal.classList.add('alert-show');
+}
+
+function closeNotifyModal() {
+    const modal = getEl('notify-modal');
+    if (modal) modal.classList.remove('alert-show');
 }
