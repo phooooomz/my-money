@@ -1,61 +1,156 @@
 <!DOCTYPE html>
 <html lang="th" class="h-full bg-[#0c0d0e] text-[#f0f2f5]">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบบัญชีรายรับ-รายจ่าย & AI Assistant</title>
-    
-    <!-- PWA & Manifest Settings -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0c0d0e">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบบัญชีรายรับ-รายจ่าย & AI Assistant</title>
+<!-- PWA & Manifest Settings -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0c0d0e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body class="min-h-full flex flex-col items-center justify-start p-4 md:p-10 antialiased bg-[#0c0d0e]">
-
-    <div class="w-full max-w-4xl flex flex-col gap-6">
-        
-        <!-- Header & Tab Navigation -->
-        <header class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#272a2e] gap-4">
-            <div>
-                <h1 class="text-xl font-medium tracking-tight text-[#f0f2f5]">ระบบบัญชีรายรับ-รายจ่าย</h1>
-                <p class="text-xs text-[#9ca3af]">Dark Minimalist Financial Ledger & AI Assistant</p>
-            </div>
-            
-            <nav class="flex gap-4 text-sm font-medium text-[#9ca3af]">
-                <button id="tab-app-btn" onclick="switchTab('app')" class="pb-2 tab-active transition-colors">
-                    บันทึกบัญชี
-                </button>
-                <button id="tab-ai-btn" onclick="switchTab('ai')" class="pb-2 hover:text-[#f0f2f5] transition-colors">
-                    คุยกับ AI
-                </button>
-            </nav>
-        </header>
-
-        <!-- TAB 1: WEB APP UI -->
-        <main id="tab-app" class="flex flex-col gap-8 w-full max-w-lg mx-auto">
-            
-            <!-- Push Notification Toggle Bar -->
-            <div class="bg-[#16181a] p-3 rounded-xl border border-[#272a2e] flex items-center justify-between text-xs">
-                <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span class="text-[#f0f2f5] font-medium">การแจ้งเตือนสรุปประจำวัน/สัปดาห์</span>
-                </div>
-                <button 
-                    id="notify-btn" 
-                    onclick="toggleNotifications()"
-                    class="px-3 py-1 rounded-md bg-[#0c0d0e] border border-[#272a2e] text-[#9ca3af] hover:text-[#f0f2f5] transition"
-                >
-                    เปิดแจ้งเตือน
-                </button>
-            </div>
-
-            <!-- Summary Cards -->
-            <section class="grid grid-cols-1 gap-3">
-<!-- ... existing code -->
+<div class="w-full max-w-4xl flex flex-col gap-6">
+<!-- Header & Tab Navigation -->
+<header class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#272a2e] gap-4">
+<div>
+<h1 class="text-xl font-medium tracking-tight text-[#f0f2f5]">ระบบบัญชีรายรับ-รายจ่าย</h1>
+<p class="text-xs text-[#9ca3af]">Dark Minimalist Financial Ledger & AI Assistant</p>
+</div>
+<nav class="flex gap-4 text-sm font-medium text-[#9ca3af]">
+<button id="tab-app-btn" onclick="switchTab('app')" class="pb-2 tab-active transition-colors">
+บันทึกบัญชี
+</button>
+<button id="tab-ai-btn" onclick="switchTab('ai')" class="pb-2 hover:text-[#f0f2f5] transition-colors">
+คุยกับ AI
+</button>
+</nav>
+</header>
+<!-- TAB 1: WEB APP UI -->
+<main id="tab-app" class="flex flex-col gap-8 w-full max-w-lg mx-auto">
+<!-- Summary Cards -->
+<section class="grid grid-cols-1 gap-3">
+<div class="bg-[#16181a] p-5 rounded-2xl border border-[#272a2e]">
+<span class="text-xs text-[#9ca3af] font-medium tracking-wide uppercase">ยอดเงินคงเหลือสุทธิ</span>
+<div id="total-balance" class="text-3xl font-semibold mt-1 tracking-tight text-[#f0f2f5] font-mono">฿0.00</div>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div class="bg-[#16181a] p-4 rounded-2xl border border-[#272a2e]">
+<span class="text-xs text-[#9ca3af]">รายรับทั้งหมด</span>
+<div id="total-income" class="text-lg font-medium text-emerald-400 mt-1 font-mono">฿0.00</div>
+</div>
+<div class="bg-[#16181a] p-4 rounded-2xl border border-[#272a2e]">
+<span class="text-xs text-[#9ca3af]">รายจ่ายทั้งหมด</span>
+<div id="total-expense" class="text-lg font-medium text-rose-400 mt-1 font-mono">฿0.00</div>
+</div>
+</div>
+</section>
+<!-- Input Form -->
+<section class="bg-[#16181a] p-5 rounded-2xl border border-[#272a2e] flex flex-col gap-4">
+<h2 class="text-sm font-medium text-[#f0f2f5]">บันทึกรายการใหม่</h2>
+<div class="flex flex-col gap-3">
+<!-- Date Input -->
+<div>
+<label class="text-xs text-[#9ca3af] mb-1 block">วันที่บันทึก</label>
+<input 
+type="date" 
+id="entry-date" 
+class="w-full bg-[#0c0d0e] border border-[#272a2e] rounded-xl px-4 py-2.5 text-sm text-[#f0f2f5] focus:outline-none focus:border-[#9ca3af] transition"
+>
+</div>
+<div class="flex gap-2 bg-[#0c0d0e] p-1 rounded-xl border border-[#272a2e]">
+<button id="type-expense" onclick="setEntryType('expense')" class="flex-1 py-1.5 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5] transition">
+รายจ่าย (-)
+</button>
+<button id="type-income" onclick="setEntryType('income')" class="flex-1 py-1.5 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5] transition">
+รายรับ (+)
+</button>
+</div>
+<input 
+type="text" 
+id="entry-desc" 
+placeholder="รายละเอียด เช่น ค่าอาหาร, เงินเดือน" 
+class="bg-[#0c0d0e] border border-[#272a2e] rounded-xl px-4 py-2.5 text-sm text-[#f0f2f5] focus:outline-none focus:border-[#9ca3af] transition"
+>
+<div class="relative">
+<input 
+type="number" 
+id="entry-amount" 
+placeholder="0.00" 
+step="any"
+class="w-full bg-[#0c0d0e] border border-[#272a2e] rounded-xl pl-4 pr-12 py-2.5 text-sm text-[#f0f2f5] font-mono focus:outline-none focus:border-[#9ca3af] transition"
+>
+<span class="absolute right-4 top-2.5 text-sm text-[#9ca3af]">THB</span>
+</div>
+<button 
+onclick="addEntry()" 
+class="mt-2 bg-[#f0f2f5] text-[#0c0d0e] font-medium py-2.5 rounded-xl text-sm hover:bg-[#d1d5db] active:scale-[0.99] transition"
+>
+บันทึกรายการ
+</button>
+</div>
+</section>
+<!-- Transaction History List -->
+<section class="flex flex-col gap-3">
+<div class="flex items-center justify-between px-1">
+<h2 class="text-sm font-medium text-[#f0f2f5]">ประวัติการบันทึก</h2>
+<button onclick="clearAllData()" class="text-xs text-rose-400/80 hover:text-rose-400 transition">ล้างข้อมูลทั้งหมด</button>
+</div>
+<div id="transaction-list" class="flex flex-col gap-2">
+<!-- Dynamic rendering -->
+</div>
+</section>
+</main>
+<!-- TAB 2: AI CHAT UI -->
+<main id="tab-ai" class="flex flex-col gap-4 w-full max-w-2xl mx-auto hidden">
+<div class="bg-[#16181a] p-4 rounded-2xl border border-[#272a2e] flex items-center justify-between">
+<div>
+<h2 class="text-sm font-medium text-[#f0f2f5]">ผู้ช่วย AI สรุปบัญชี</h2>
+<p class="text-xs text-[#9ca3af]">ประมวลผลคำสั่งผ่าน Gemini API บน Cloudflare Backend</p>
+</div>
+<!-- Status Badge -->
+<div id="network-status" class="flex items-center gap-2 px-3 py-1 rounded-full border bg-emerald-950/40 border-emerald-900/60 text-emerald-400 text-xs">
+<span id="network-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<span id="network-text">Online</span>
+</div>
+</div>
+<!-- Chat Window -->
+<div id="chat-box" class="bg-[#16181a] border border-[#272a2e] rounded-2xl p-4 h-[420px] overflow-y-auto flex flex-col gap-3 text-sm">
+<div class="bg-[#272a2e]/50 text-[#f0f2f5] p-3 rounded-xl max-w-[85%] self-start border border-[#272a2e]">
+สวัสดีครับ! ผมคือผู้ช่วย AI ประจำแอปบัญชีรายรับ-รายจ่าย สามารถสอบถามสรุปยอด หรือสั่งจดบันทึกได้เลยครับ
+</div>
+</div>
+<!-- Chat Input Form -->
+<form onsubmit="sendChatMessage(event)" class="flex gap-2">
+<input 
+type="text" 
+id="chat-input" 
+placeholder="พิมพ์สั่ง เช่น 'สรุปรายจ่ายทั้งหมดให้หน่อย'..." 
+class="flex-1 bg-[#16181a] border border-[#272a2e] rounded-xl px-4 py-3 text-sm text-[#f0f2f5] focus:outline-none focus:border-[#9ca3af] transition"
+>
+<button 
+type="submit" 
+id="chat-send-btn"
+class="bg-[#f0f2f5] text-[#0c0d0e] px-5 py-3 rounded-xl text-sm font-medium hover:bg-[#d1d5db] transition"
+>
+ส่ง
+</button>
+</form>
+</main>
+<!-- Footer & Test Button -->
+<footer class="mt-auto pt-6 flex flex-col items-center justify-center gap-2 text-xs text-[#9ca3af] border-t border-[#272a2e]">
+<button onclick="testNotificationNow()" class="text-[11px] text-[#9ca3af]/60 hover:text-[#f0f2f5] underline transition">
+⚡ กดเพื่อทดสอบการแจ้งเตือน (Test Notification)
+</button>
+<div>Powered by Cloudflare Pages & Gemini API</div>
+</footer>
+</div>
+<script src="app.js" defer></script>
+</body>
+    </html>
