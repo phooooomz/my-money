@@ -1,21 +1,17 @@
 {
-"name": "My Money - ระบบบัญชีรายรับรายจ่าย",
-"short_name": "My Money",
-"description": "เว็บจดบันทึกรายรับ-รายจ่ายมินิมอล พร้อมผู้ช่วย AI สรุปบัญชี",
-"start_url": "/",
-"display": "standalone",
-"background_color": "#0c0d0e",
-"theme_color": "#0c0d0e",
-"icons": [
-{
-"src": "/icon.png",
-"sizes": "192x192",
-"type": "image/png"
-},
-{
-"src": "/icon.png",
-"sizes": "512x512",
-"type": "image/png"
-}
-]
+  "id": "/",
+  "name": "My Money - ระบบบัญชีรายรับรายจ่าย",
+  "short_name": "My Money",
+  "description": "เว็บจดบันทึกรายรับ-รายจ่ายมินิมอล พร้อมผู้ช่วย AI สรุปบัญชี",
+  "lang": "th",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0c0d0e",
+  "theme_color": "#0c0d0e",
+  "icons": [
+    { "src": "/icon.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
 }
