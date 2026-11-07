@@ -89,11 +89,14 @@ function updateTabIndicator() {
     const indicator = getEl('tab-indicator');
     const nav = getEl('tab-nav');
     if (activeBtn && indicator && nav) {
-        const navRect = nav.getBoundingClientRect();
+        // indicator ถูกวางแบบ absolute ใน container (ที่มี padding + border) ไม่ใช่ใน nav
+        // จึงต้องวัดตำแหน่งเทียบกับ container เดียวกับที่ indicator อ้างอิงอยู่
+        const container = indicator.offsetParent || nav.parentElement;
+        const containerRect = container.getBoundingClientRect();
         const btnRect = activeBtn.getBoundingClientRect();
-        if (btnRect.width > 0 && navRect.width > 0) {
+        if (btnRect.width > 0 && containerRect.width > 0) {
             indicator.style.width = `${btnRect.width}px`;
-            indicator.style.left = `${btnRect.left - navRect.left}px`;
+            indicator.style.left = `${btnRect.left - containerRect.left - container.clientLeft}px`;
         }
     }
 }
