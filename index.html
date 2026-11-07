@@ -20,12 +20,15 @@
 <!-- Header & Tab Navigation -->
 <header class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#272a2e] gap-4">
 <div>
-<h1 class="text-xl font-medium tracking-tight text-[#f0f2f5]">ระบบบัญชีรายรับ-รายจ่าย</h1>
-<p class="text-xs text-[#9ca3af]">คำนวณรายรับ-รายจ่าย & AIผู้ช่วยเหลือ</p>
+<h1 class="text-xl font-medium tracking-tight text-[#f0f2f5]">บัญชีรายรับ-รายจ่าย</h1>
+<p class="text-xs text-[#9ca3af]">ระบบคำนวณรายรับ-รายจ่าย มาพร้อมกับAI Assistant</p>
 </div>
 <nav class="flex gap-4 text-sm font-medium text-[#9ca3af]">
 <button id="tab-app-btn" onclick="switchTab('app')" class="pb-2 tab-active transition-colors">
 บันทึกบัญชี
+</button>
+<button id="tab-summary-btn" onclick="switchTab('summary')" class="pb-2 hover:text-[#f0f2f5] transition-colors">
+สรุปสถิติ
 </button>
 <button id="tab-ai-btn" onclick="switchTab('ai')" class="pb-2 hover:text-[#f0f2f5] transition-colors">
 คุยกับ AI
@@ -33,11 +36,11 @@
 </nav>
 </header>
 <!-- TAB 1: WEB APP UI -->
-<main id="tab-app" class="flex flex-col gap-8 w-full max-w-lg mx-auto">
-<!-- Summary Cards -->
+<main id="tab-app" class="tab-content flex flex-col gap-8 w-full max-w-lg mx-auto">
+<!-- Summary Cards (Income Left, Expense Right) -->
 <section class="grid grid-cols-1 gap-3">
 <div class="bg-[#16181a] p-5 rounded-2xl border border-[#272a2e]">
-<span class="text-xs text-[#9ca3af] font-medium tracking-wide uppercase">ยอดเงินคงเหลือสุทธิ</span>
+<span class="text-xs text-[#9ca3af] font-medium tracking-wide uppercase">ยอดเงินคงเหลือ</span>
 <div id="total-balance" class="text-3xl font-semibold mt-1 tracking-tight text-[#f0f2f5] font-mono">฿0.00</div>
 </div>
 <div class="grid grid-cols-2 gap-3">
@@ -51,7 +54,7 @@
 </div>
 </div>
 </section>
-<!-- Input Form -->
+<!-- Input Form (Income First, Expense Second) -->
 <section class="bg-[#16181a] p-5 rounded-2xl border border-[#272a2e] flex flex-col gap-4">
 <h2 class="text-sm font-medium text-[#f0f2f5]">บันทึกรายการใหม่</h2>
 <div class="flex flex-col gap-3">
@@ -64,18 +67,19 @@ id="entry-date"
 class="w-full bg-[#0c0d0e] border border-[#272a2e] rounded-xl px-4 py-2.5 text-sm text-[#f0f2f5] focus:outline-none focus:border-[#9ca3af] transition"
 >
 </div>
+<!-- Type Selector: Income first -->
 <div class="flex gap-2 bg-[#0c0d0e] p-1 rounded-xl border border-[#272a2e]">
-<button id="type-expense" onclick="setEntryType('expense')" class="flex-1 py-1.5 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5] transition">
-รายจ่าย (-)
-</button>
-<button id="type-income" onclick="setEntryType('income')" class="flex-1 py-1.5 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5] transition">
+<button id="type-income" onclick="setEntryType('income')" class="flex-1 py-1.5 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5] transition">
 รายรับ (+)
+</button>
+<button id="type-expense" onclick="setEntryType('expense')" class="flex-1 py-1.5 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5] transition">
+รายจ่าย (-)
 </button>
 </div>
 <input 
 type="text" 
 id="entry-desc" 
-placeholder="รายละเอียด เช่น ค่าอาหาร, เงินเดือน" 
+placeholder="รายละเอียด เช่น เงินเดือน, ค่าอาหาร" 
 class="bg-[#0c0d0e] border border-[#272a2e] rounded-xl px-4 py-2.5 text-sm text-[#f0f2f5] focus:outline-none focus:border-[#9ca3af] transition"
 >
 <div class="relative">
@@ -107,12 +111,57 @@ class="mt-2 bg-[#f0f2f5] text-[#0c0d0e] font-medium py-2.5 rounded-xl text-sm ho
 </div>
 </section>
 </main>
-<!-- TAB 2: AI CHAT UI -->
-<main id="tab-ai" class="flex flex-col gap-4 w-full max-w-2xl mx-auto hidden">
+<!-- TAB 2: SUMMARY & ANALYTICS UI -->
+<main id="tab-summary" class="tab-content tab-hidden flex flex-col gap-6 w-full max-w-xl mx-auto">
+<!-- Time Period Filter Header -->
+<div class="bg-[#16181a] p-4 rounded-2xl border border-[#272a2e] flex items-center justify-between">
+<h2 class="text-sm font-medium text-[#f0f2f5]">สรุปสถิติการเงิน</h2>
+<div class="flex gap-1 bg-[#0c0d0e] p-1 rounded-xl border border-[#272a2e]">
+<button id="filter-all" onclick="setSummaryFilter('all')" class="px-3 py-1 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5] transition">ทั้งหมด</button>
+<button id="filter-month" onclick="setSummaryFilter('month')" class="px-3 py-1 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5] transition">เดือนนี้</button>
+<button id="filter-week" onclick="setSummaryFilter('week')" class="px-3 py-1 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5] transition">7 วันล่าสุด</button>
+</div>
+</div>
+<!-- Ratio Progress Bar (Income Green First) -->
+<section class="bg-[#16181a] p-5 rounded-2xl border border-[#272a2e] flex flex-col gap-3">
+<div class="flex justify-between items-center text-xs text-[#9ca3af]">
+<span>สัดส่วน รายรับ / รายจ่าย</span>
+<span id="summary-ratio-text" class="font-mono text-[#f0f2f5]">0% รายรับ</span>
+</div>
+<div class="w-full bg-[#0c0d0e] rounded-full h-3 flex overflow-hidden border border-[#272a2e]">
+<div id="bar-income" class="bg-emerald-500 h-full transition-all duration-500" style="width: 50%;"></div>
+<div id="bar-expense" class="bg-rose-500 h-full transition-all duration-500" style="width: 50%;"></div>
+</div>
+<div class="flex justify-between text-xs font-mono mt-1">
+<span id="summary-income-val" class="text-emerald-400">รายรับ: ฿0.00</span>
+<span id="summary-expense-val" class="text-rose-400">รายจ่าย: ฿0.00</span>
+</div>
+</section>
+<!-- Quick Metrics Grid -->
+<section class="grid grid-cols-2 gap-3">
+<div class="bg-[#16181a] p-4 rounded-2xl border border-[#272a2e]">
+<span class="text-xs text-[#9ca3af]">เฉลี่ยรายจ่ายต่อวัน</span>
+<div id="daily-avg-expense" class="text-lg font-medium text-[#f0f2f5] mt-1 font-mono">฿0.00</div>
+</div>
+<div class="bg-[#16181a] p-4 rounded-2xl border border-[#272a2e]">
+<span class="text-xs text-[#9ca3af]">จำนวนรายการทั้งหมด</span>
+<div id="total-count-text" class="text-lg font-medium text-[#f0f2f5] mt-1 font-mono">0 รายการ</div>
+</div>
+</section>
+<!-- Top Expense Items -->
+<section class="bg-[#16181a] p-5 rounded-2xl border border-[#272a2e] flex flex-col gap-3">
+<h3 class="text-sm font-medium text-[#f0f2f5]">รายจ่ายสูงสุดช่วงนี้</h3>
+<div id="top-expenses-list" class="flex flex-col gap-2">
+<!-- Dynamic rendering -->
+</div>
+</section>
+</main>
+<!-- TAB 3: AI CHAT UI -->
+<main id="tab-ai" class="tab-content tab-hidden flex flex-col gap-4 w-full max-w-2xl mx-auto">
 <div class="bg-[#16181a] p-4 rounded-2xl border border-[#272a2e] flex items-center justify-between">
 <div>
 <h2 class="text-sm font-medium text-[#f0f2f5]">ผู้ช่วย AI สรุปบัญชี</h2>
-<p class="text-xs text-[#9ca3af]">ประมวลผลคำสั่งผ่าน Gemini Ai</p>
+<p class="text-xs text-[#9ca3af]">ประมวลผลคำสั่งผ่าน Gemini API บน Cloudflare Backend</p>
 </div>
 <!-- Status Badge -->
 <div id="network-status" class="flex items-center gap-2 px-3 py-1 rounded-full border bg-emerald-950/40 border-emerald-900/60 text-emerald-400 text-xs">
@@ -131,7 +180,7 @@ class="mt-2 bg-[#f0f2f5] text-[#0c0d0e] font-medium py-2.5 rounded-xl text-sm ho
 <input 
 type="text" 
 id="chat-input" 
-placeholder="พิมพ์สั่ง เช่น 'สรุปรายจ่ายทั้งหมดให้หน่อย'..." 
+placeholder="พิมพ์สั่ง เช่น 'สรุปรายรับและรายจ่ายทั้งหมดให้หน่อย'..." 
 class="flex-1 bg-[#16181a] border border-[#272a2e] rounded-xl px-4 py-3 text-sm text-[#f0f2f5] focus:outline-none focus:border-[#9ca3af] transition"
 >
 <button 
@@ -145,9 +194,9 @@ class="bg-[#f0f2f5] text-[#0c0d0e] px-5 py-3 rounded-xl text-sm font-medium hove
 </main>
 <!-- Footer -->
 <footer class="mt-auto pt-6 flex flex-col items-center justify-center gap-2 text-xs text-[#9ca3af] border-t border-[#272a2e]">
-<div>Powered by Cloudflare & Gemini</div>
+<div>Powered by Cloudflare & Gemini AI</div>
 </footer>
 </div>
 <script src="app.js" defer></script>
 </body>
-    </html>
+</html>
