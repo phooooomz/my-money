@@ -8,10 +8,59 @@ document.addEventListener('DOMContentLoaded', () => {
     renderApp();
     registerServiceWorker();
     setupNetworkListeners();
+    setTimeout(updateTabIndicator, 50);
+    window.addEventListener('resize', updateTabIndicator);
 });
 
 function getEl(id) {
     return document.getElementById(id);
+}
+
+// Update Active Tab Dynamic Sliding Line/Pill Position
+function updateTabIndicator() {
+    const activeBtn = document.querySelector('.tab-btn-active');
+    const indicator = getEl('tab-indicator');
+    const nav = getEl('tab-nav');
+
+    if (activeBtn && indicator && nav) {
+        const navRect = nav.getBoundingClientRect();
+        const btnRect = activeBtn.getBoundingClientRect();
+
+        indicator.style.width = `${btnRect.width}px`;
+        indicator.style.left = `${btnRect.left - navRect.left}px`;
+    }
+}
+
+// Tab Switching with Smooth Spring & Sliding Animation
+function switchTab(tabName) {
+    const tabs = {
+        app: { content: getEl('tab-app'), btn: getEl('tab-app-btn') },
+        summary: { content: getEl('tab-summary'), btn: getEl('tab-summary-btn') },
+        ai: { content: getEl('tab-ai'), btn: getEl('tab-ai-btn') }
+    };
+
+    Object.keys(tabs).forEach(key => {
+        const item = tabs[key];
+        if (!item.content || !item.btn) return;
+
+        if (key === tabName) {
+            item.btn.classList.add('tab-btn-active');
+            item.content.classList.remove('tab-hidden');
+            
+            // Trigger entry spring animation
+            item.content.classList.remove('tab-entering');
+            void item.content.offsetWidth; // Force reflow
+            item.content.classList.add('tab-entering');
+
+            if (key === 'summary') renderSummaryTab();
+        } else {
+            item.btn.classList.remove('tab-btn-active');
+            item.content.classList.add('tab-hidden');
+            item.content.classList.remove('tab-entering');
+        }
+    });
+
+    updateTabIndicator();
 }
 
 function setDefaultDate() {
@@ -55,7 +104,7 @@ function addEntry() {
     const dateVal = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().split('T')[0];
 
     if (!desc || isNaN(amount) || amount <= 0) {
-        alert('กรุณากรอกรายละเอียดและจำนวนเงินให้ถูกต้อง');
+        showCustomAlert('กรุณากรอกรายละเอียดและจำนวนเงินให้ถูกต้อง');
         return;
     }
 
@@ -111,7 +160,7 @@ function renderApp() {
     if (listContainer) {
         if (entries.length === 0) {
             listContainer.innerHTML = `
-                <div class="text-center py-8 text-xs text-[#9ca3af] bg-[#16181a] rounded-xl border border-[#272a2e]">
+                <div class="text-center py-8 text-xs text-[#9ca3af] bg-[#16181a] rounded-2xl border border-[#272a2e]">
                     ยังไม่มีรายการบันทึก
                 </div>
             `;
@@ -123,16 +172,16 @@ function renderApp() {
                 const displayDate = item.date || 'ไม่ระบุวันที่';
 
                 return `
-                    <div class="bg-[#16181a] border border-[#272a2e] rounded-xl p-3 flex items-center justify-between text-sm">
-                        <div class="flex flex-col">
+                    <div class="bg-[#16181a] border border-[#272a2e] rounded-2xl p-3.5 flex items-center justify-between text-xs md:text-sm hover:border-white/10 transition">
+                        <div class="flex flex-col gap-0.5">
                             <span class="text-[#f0f2f5] font-medium">${escapeHtml(item.desc)}</span>
-                            <span class="text-[10px] text-[#9ca3af] font-mono mt-0.5">${displayDate}</span>
+                            <span class="text-[10px] text-[#9ca3af] font-mono">${displayDate}</span>
                         </div>
                         <div class="flex items-center gap-3">
-                            <span class="font-mono font-medium ${colorClass}">
+                            <span class="font-mono font-semibold ${colorClass}">
                                 ${sign}฿${Number(item.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
                             </span>
-                            <button onclick="deleteEntry('${item.id}')" class="text-xs text-[#9ca3af] hover:text-rose-400 transition px-1">
+                            <button onclick="deleteEntry('${item.id}')" class="text-xs text-[#9ca3af] hover:text-rose-400 transition px-1 py-0.5">
                                 ✕
                             </button>
                         </div>
@@ -190,7 +239,6 @@ function renderSummaryTab() {
 
     const total = income + expense;
     let incomePct = total > 0 ? (income / total) * 100 : 50;
-    let expensePct = total > 0 ? (expense / total) * 100 : 50;
 
     const barIncome = getEl('bar-income');
     const barExpense = getEl('bar-expense');
@@ -201,18 +249,16 @@ function renderSummaryTab() {
     const totalCountText = getEl('total-count-text');
 
     if (barIncome) barIncome.style.width = `${incomePct}%`;
-    if (barExpense) barExpense.style.width = `${expensePct}%`;
+    if (barExpense) barExpense.style.width = `${100 - incomePct}%`;
     if (ratioText) ratioText.textContent = `${incomePct.toFixed(1)}% รายรับ`;
     if (incVal) incVal.textContent = `รายรับ: ฿${income.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
     if (expVal) expVal.textContent = `รายจ่าย: ฿${expense.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
 
-    // Calculate Daily Average
     const uniqueDays = new Set(filteredEntries.map(e => e.date)).size || 1;
     const avg = expense / uniqueDays;
     if (dailyAvg) dailyAvg.textContent = `฿${avg.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
     if (totalCountText) totalCountText.textContent = `${filteredEntries.length} รายการ`;
 
-    // Render Top Expenses
     const topContainer = getEl('top-expenses-list');
     if (topContainer) {
         expensesList.sort((a, b) => b.amount - a.amount);
@@ -222,39 +268,13 @@ function renderSummaryTab() {
             topContainer.innerHTML = `<div class="text-xs text-[#9ca3af] py-2">ไม่มีข้อมูลรายจ่ายในช่วงเวลานี้</div>`;
         } else {
             topContainer.innerHTML = top3.map((item, index) => `
-                <div class="flex items-center justify-between text-xs py-1 border-b border-[#272a2e]/50 last:border-0">
+                <div class="flex items-center justify-between text-xs py-2 border-b border-[#272a2e]/50 last:border-0">
                     <span class="text-[#f0f2f5]">${index + 1}. ${escapeHtml(item.desc)}</span>
-                    <span class="font-mono text-rose-400 font-medium">฿${Number(item.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
+                    <span class="font-mono text-rose-400 font-semibold">฿${Number(item.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
                 </div>
             `).join('');
         }
     }
-}
-
-// Tab Switching with Smooth Fade & Slide Animation
-function switchTab(tabName) {
-    const tabs = {
-        app: { content: getEl('tab-app'), btn: getEl('tab-app-btn') },
-        summary: { content: getEl('tab-summary'), btn: getEl('tab-summary-btn') },
-        ai: { content: getEl('tab-ai'), btn: getEl('tab-ai-btn') }
-    };
-
-    const inactiveClass = 'pb-2 text-[#9ca3af] hover:text-[#f0f2f5] transition-colors';
-    const activeClass = 'pb-2 tab-active transition-colors';
-
-    Object.keys(tabs).forEach(key => {
-        const item = tabs[key];
-        if (!item.content || !item.btn) return;
-
-        if (key === tabName) {
-            item.btn.className = activeClass;
-            item.content.classList.remove('tab-hidden');
-            if (key === 'summary') renderSummaryTab();
-        } else {
-            item.btn.className = inactiveClass;
-            item.content.classList.add('tab-hidden');
-        }
-    });
 }
 
 async function sendChatMessage(e) {
@@ -310,9 +330,9 @@ function appendChatMessage(sender, text, id = null) {
     if (id) msgDiv.id = id;
 
     if (sender === 'user') {
-        msgDiv.className = 'bg-[#f0f2f5] text-[#0c0d0e] p-3 rounded-xl max-w-[85%] self-end font-medium';
+        msgDiv.className = 'bg-[#f0f2f5] text-[#0c0d0e] p-3.5 rounded-2xl max-w-[85%] self-end font-medium shadow-sm';
     } else {
-        msgDiv.className = 'bg-[#272a2e]/50 text-[#f0f2f5] p-3 rounded-xl max-w-[85%] self-start border border-[#272a2e] whitespace-pre-wrap';
+        msgDiv.className = 'bg-[#272a2e]/60 text-[#f0f2f5] p-3.5 rounded-2xl max-w-[85%] self-start border border-white/5 whitespace-pre-wrap leading-relaxed';
     }
 
     msgDiv.textContent = text;
@@ -332,9 +352,13 @@ function escapeHtml(str) {
     });
 }
 
+function showCustomAlert(msg) {
+    alert(msg);
+}
+
 function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW bypass:', err));
+        navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW bypassed:', err));
     }
 }
 
