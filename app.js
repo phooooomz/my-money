@@ -1,5 +1,6 @@
 // --- STATE MANAGEMENT ---
 let entries = JSON.parse(localStorage.getItem('ledger_entries') || '[]');
+let budgetGoal = parseFloat(localStorage.getItem('budget_goal') || '10000');
 let currentType = 'income'; // Default to income first
 let summaryFilter = 'all';
 
@@ -73,6 +74,7 @@ function setDefaultDate() {
 
 function saveData() {
     localStorage.setItem('ledger_entries', JSON.stringify(entries));
+    localStorage.setItem('budget_goal', budgetGoal.toString());
     renderApp();
 }
 
@@ -92,14 +94,24 @@ function setEntryType(type) {
     }
 }
 
+function setBudgetGoalPrompt() {
+    const val = prompt('กำหนดเป้าหมายงบประมาณรายจ่ายประจำเดือน (บาท):', budgetGoal);
+    if (val !== null && !isNaN(parseFloat(val)) && parseFloat(val) > 0) {
+        budgetGoal = parseFloat(val);
+        saveData();
+    }
+}
+
 function addEntry() {
     const dateInput = getEl('entry-date');
+    const categoryInput = getEl('entry-category');
     const descInput = getEl('entry-desc');
     const amountInput = getEl('entry-amount');
 
-    if (!descInput || !amountInput) return;
+    if (!descInput || !amountInput || !categoryInput) return;
 
     const desc = descInput.value.trim();
+    const category = categoryInput.value;
     const amount = parseFloat(amountInput.value);
     const dateVal = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().split('T')[0];
 
@@ -111,6 +123,7 @@ function addEntry() {
     const newEntry = {
         id: Date.now().toString(),
         type: currentType,
+        category: category,
         desc: desc,
         amount: amount,
         date: dateVal
@@ -139,15 +152,24 @@ function clearAllData() {
 function renderApp() {
     let income = 0;
     let expense = 0;
+    let currentMonthExpense = 0;
+    const currentMonthStr = new Date().toISOString().slice(0, 7);
 
     entries.forEach(item => {
         const val = Number(item.amount) || 0;
-        if (item.type === 'income') income += val;
-        else expense += val;
+        if (item.type === 'income') {
+            income += val;
+        } else {
+            expense += val;
+            if (item.date && item.date.startsWith(currentMonthStr)) {
+                currentMonthExpense += val;
+            }
+        }
     });
 
     const balance = income - expense;
 
+    // Render Balances
     const totalBalanceEl = getEl('total-balance');
     const totalIncomeEl = getEl('total-income');
     const totalExpenseEl = getEl('total-expense');
@@ -156,6 +178,28 @@ function renderApp() {
     if (totalIncomeEl) totalIncomeEl.textContent = `฿${income.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
     if (totalExpenseEl) totalExpenseEl.textContent = `฿${expense.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
 
+    // Render Budget Progress Bar
+    const budgetProgressBar = getEl('budget-progress-bar');
+    const budgetSpentText = getEl('budget-spent-text');
+    const budgetLimitText = getEl('budget-limit-text');
+
+    if (budgetProgressBar && budgetSpentText && budgetLimitText) {
+        const pct = budgetGoal > 0 ? Math.min((currentMonthExpense / budgetGoal) * 100, 100) : 0;
+        budgetProgressBar.style.width = `${pct}%`;
+
+        if (pct >= 100) {
+            budgetProgressBar.className = "bg-rose-500 h-full rounded-full transition-all duration-500";
+        } else if (pct >= 80) {
+            budgetProgressBar.className = "bg-amber-400 h-full rounded-full transition-all duration-500";
+        } else {
+            budgetProgressBar.className = "bg-gradient-to-r from-[#6E5BFF] to-[#38C6FF] h-full rounded-full transition-all duration-500";
+        }
+
+        budgetSpentText.textContent = `ใช้ไป ฿${currentMonthExpense.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+        budgetLimitText.textContent = `งบ ฿${budgetGoal.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+    }
+
+    // Render Transaction List
     const listContainer = getEl('transaction-list');
     if (listContainer) {
         if (entries.length === 0) {
@@ -170,12 +214,21 @@ function renderApp() {
                 const sign = isExpense ? '-' : '+';
                 const colorClass = isExpense ? 'text-rose-400' : 'text-emerald-400';
                 const displayDate = item.date || 'ไม่ระบุวันที่';
+                const categoryTag = item.category || (isExpense ? '📦 รายจ่าย' : '💼 รายรับ');
 
                 return `
                     <div class="bg-[#16181a] border border-[#272a2e] rounded-2xl p-3.5 flex items-center justify-between text-xs md:text-sm hover:border-white/10 transition">
-                        <div class="flex flex-col gap-0.5">
-                            <span class="text-[#f0f2f5] font-medium">${escapeHtml(item.desc)}</span>
-                            <span class="text-[10px] text-[#9ca3af] font-mono">${displayDate}</span>
+                        <div class="flex items-center gap-3">
+                            <span class="text-base bg-[#0c0d0e] px-2.5 py-1.5 rounded-xl border border-[#272a2e]">
+                                ${categoryTag.split(' ')[0]}
+                            </span>
+                            <div class="flex flex-col gap-0.5">
+                                <span class="text-[#f0f2f5] font-medium">${escapeHtml(item.desc)}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] text-[#9ca3af] font-mono">${displayDate}</span>
+                                    <span class="text-[10px] text-[#9ca3af]">• ${categoryTag.substring(categoryTag.indexOf(' ') + 1)}</span>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="font-mono font-semibold ${colorClass}">
@@ -225,7 +278,7 @@ function renderSummaryTab() {
 
     let income = 0;
     let expense = 0;
-    const expensesList = [];
+    const categoryTotals = {};
 
     filteredEntries.forEach(item => {
         const val = Number(item.amount) || 0;
@@ -233,7 +286,8 @@ function renderSummaryTab() {
             income += val;
         } else {
             expense += val;
-            expensesList.push(item);
+            const cat = item.category || '📦 อื่นๆ';
+            categoryTotals[cat] = (categoryTotals[cat] || 0) + val;
         }
     });
 
@@ -259,20 +313,30 @@ function renderSummaryTab() {
     if (dailyAvg) dailyAvg.textContent = `฿${avg.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
     if (totalCountText) totalCountText.textContent = `${filteredEntries.length} รายการ`;
 
-    const topContainer = getEl('top-expenses-list');
-    if (topContainer) {
-        expensesList.sort((a, b) => b.amount - a.amount);
-        const top3 = expensesList.slice(0, 3);
+    // Category Breakdown rendering
+    const catContainer = getEl('category-breakdown-list');
+    if (catContainer) {
+        const sortedCategories = Object.keys(categoryTotals).sort((a, b) => categoryTotals[b] - categoryTotals[a]);
 
-        if (top3.length === 0) {
-            topContainer.innerHTML = `<div class="text-xs text-[#9ca3af] py-2">ไม่มีข้อมูลรายจ่ายในช่วงเวลานี้</div>`;
+        if (sortedCategories.length === 0) {
+            catContainer.innerHTML = `<div class="text-xs text-[#9ca3af] py-2">ไม่มีข้อมูลรายจ่ายในช่วงเวลานี้</div>`;
         } else {
-            topContainer.innerHTML = top3.map((item, index) => `
-                <div class="flex items-center justify-between text-xs py-2 border-b border-[#272a2e]/50 last:border-0">
-                    <span class="text-[#f0f2f5]">${index + 1}. ${escapeHtml(item.desc)}</span>
-                    <span class="font-mono text-rose-400 font-semibold">฿${Number(item.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
-                </div>
-            `).join('');
+            catContainer.innerHTML = sortedCategories.map(cat => {
+                const amount = categoryTotals[cat];
+                const pct = expense > 0 ? ((amount / expense) * 100).toFixed(1) : 0;
+
+                return `
+                    <div class="flex flex-col gap-1 py-1.5 border-b border-[#272a2e]/40 last:border-0 text-xs">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[#f0f2f5] font-medium">${cat}</span>
+                            <span class="font-mono text-rose-400 font-semibold">฿${amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })} (${pct}%)</span>
+                        </div>
+                        <div class="w-full bg-[#0c0d0e] h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-rose-400 h-full rounded-full" style="width: ${pct}%;"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
     }
 }
@@ -302,7 +366,8 @@ async function sendChatMessage(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 prompt: userText,
-                records: entries
+                records: entries,
+                budgetGoal: budgetGoal
             })
         });
 

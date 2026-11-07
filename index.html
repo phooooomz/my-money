@@ -77,7 +77,25 @@
                 </div>
             </section>
 
-            <!-- Input Form (Income First) -->
+            <!-- Monthly Budget Status Card -->
+            <section class="bg-[#16181a] p-5 rounded-3xl border border-[#272a2e] flex flex-col gap-3 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm">🎯</span>
+                        <h2 class="text-xs md:text-sm font-semibold text-[#f0f2f5]">งบประมาณรายจ่ายเดือนนี้</h2>
+                    </div>
+                    <button onclick="setBudgetGoalPrompt()" class="text-xs text-[#38C6FF] hover:underline font-medium">ตั้งเป้าหมาย</button>
+                </div>
+                <div class="w-full bg-[#0c0d0e] rounded-full h-3 flex overflow-hidden border border-[#272a2e] p-0.5">
+                    <div id="budget-progress-bar" class="bg-gradient-to-r from-[#6E5BFF] to-[#38C6FF] h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
+                </div>
+                <div class="flex justify-between text-xs font-mono">
+                    <span id="budget-spent-text" class="text-[#9ca3af]">ใช้ไป ฿0.00</span>
+                    <span id="budget-limit-text" class="text-[#f0f2f5]">งบ ฿0.00</span>
+                </div>
+            </section>
+
+            <!-- Input Form (Income First & Category Selection) -->
             <section class="bg-[#16181a] p-5 md:p-6 rounded-3xl border border-[#272a2e] flex flex-col gap-4 shadow-lg">
                 <div class="flex items-center justify-between">
                     <h2 class="text-sm font-semibold text-[#f0f2f5]">บันทึกรายการใหม่</h2>
@@ -108,12 +126,28 @@
                         </div>
                     </div>
 
+                    <!-- Category Selector with Icons -->
+                    <div>
+                        <label class="text-xs text-[#9ca3af] mb-1 block">หมวดหมู่</label>
+                        <select id="entry-category" class="w-full bg-[#0c0d0e] border border-[#272a2e] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-[#f0f2f5] focus:outline-none focus:border-[#9ca3af] transition">
+                            <option value="🍱 อาหาร">🍱 อาหาร / เครื่องดื่ม</option>
+                            <option value="🚗 เดินทาง">🚗 การเดินทาง / น้ำมัน</option>
+                            <option value="🛍️ ช้อปปิ้ง">🛍️ ช้อปปิ้ง / ของใช้</option>
+                            <option value="💡 ค่าน้ำ/ไฟ">💡 ค่าน้ำ / ค่าไฟ / เน็ต</option>
+                            <option value="🏠 ค่าบ้าน/หอ">🏠 ค่าบ้าน / ค่าเช่าห้อง</option>
+                            <option value="🎮 บันเทิง">🎮 บันเทิง / เกม / หนัง</option>
+                            <option value="💼 เงินเดือน">💼 เงินเดือน / รายได้หลัก</option>
+                            <option value="📈 ลงทุน">📈 ลงทุน / ปันผล</option>
+                            <option value="📦 อื่นๆ">📦 อื่นๆ</option>
+                        </select>
+                    </div>
+
                     <!-- Description Input -->
                     <div>
                         <input 
                             type="text" 
                             id="entry-desc" 
-                            placeholder="รายละเอียด เช่น เงินเดือน, ค่าอาหารเย็น" 
+                            placeholder="รายละเอียด เช่น ข้าวมันไก่, ค่าน้ำมัน" 
                             class="w-full bg-[#0c0d0e] border border-[#272a2e] rounded-xl px-4 py-2.5 text-xs md:text-sm text-[#f0f2f5] focus:outline-none focus:border-[#9ca3af] transition"
                         >
                     </div>
@@ -192,10 +226,10 @@
                 </div>
             </section>
 
-            <!-- Top Expense Items -->
+            <!-- Category Breakdown Summary -->
             <section class="bg-[#16181a] p-6 rounded-3xl border border-[#272a2e] flex flex-col gap-3 shadow-lg">
-                <h3 class="text-sm font-semibold text-[#f0f2f5]">รายจ่ายสูงสุดช่วงนี้</h3>
-                <div id="top-expenses-list" class="flex flex-col gap-2">
+                <h3 class="text-sm font-semibold text-[#f0f2f5]">สรุปรายจ่ายตามหมวดหมู่</h3>
+                <div id="category-breakdown-list" class="flex flex-col gap-2">
                     <!-- Dynamic rendering -->
                 </div>
             </section>
@@ -218,7 +252,7 @@
             <!-- Chat Window -->
             <div id="chat-box" class="bg-[#16181a] border border-[#272a2e] rounded-3xl p-4 h-[420px] overflow-y-auto flex flex-col gap-3 text-xs md:text-sm shadow-inner">
                 <div class="bg-[#272a2e]/60 text-[#f0f2f5] p-3.5 rounded-2xl max-w-[85%] self-start border border-white/5 leading-relaxed">
-                    สวัสดีครับ! ผมคือผู้ช่วย AI ประจำแอป สามารถสอบถามสรุปรายรับ-รายจ่าย ยอดคงเหลือ หรือให้ช่วยวิเคราะห์พฤติกรรมการใช้จ่ายได้เลยครับ
+                    สวัสดีครับ! ผมคือผู้ช่วย AI ประจำแอป สามารถสอบถามสรุปหมวดหมู่ค่าใช้จ่าย งบประมาณคงเหลือ หรือให้ช่วยวิเคราะห์พฤติกรรมการใช้จ่ายได้เลยครับ
                 </div>
             </div>
 
@@ -227,7 +261,7 @@
                 <input 
                     type="text" 
                     id="chat-input" 
-                    placeholder="พิมพ์สั่ง เช่น 'สรุปรายจ่ายทั้งหมดของเดือนนี้ให้หน่อย'..." 
+                    placeholder="พิมพ์สั่ง เช่น 'สรุปค่าอาหารเดือนนี้ให้หน่อย'..." 
                     class="flex-1 bg-[#16181a] border border-[#272a2e] rounded-2xl px-4 py-3 text-xs md:text-sm text-[#f0f2f5] focus:outline-none focus:border-[#9ca3af] transition"
                 >
                 <button 
