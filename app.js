@@ -44,7 +44,30 @@ function closeCustomAlert() {
     if (modal) modal.classList.remove('alert-show');
 }
 
-// Update Active Tab Dynamic Sliding Line/Pill Position
+// Feedback Modal Handlers
+function openFeedbackModal() {
+    const modal = getEl('feedback-modal');
+    if (modal) modal.classList.add('modal-show');
+}
+
+function closeFeedbackModal() {
+    const modal = getEl('feedback-modal');
+    if (modal) modal.classList.remove('modal-show');
+}
+
+function submitFeedback(e) {
+    e.preventDefault();
+    const typeEl = getEl('feedback-type');
+    const textEl = getEl('feedback-text');
+
+    if (!textEl || !textEl.value.trim()) return;
+
+    closeFeedbackModal();
+    showAlert('ขอบคุณสำหรับข้อเสนอแนะ!', `เราได้รับข้อมูล (${typeEl.value}) เรียบร้อยแล้ว ขอบคุณที่ช่วยพัฒนาแอปครับ`, true);
+    textEl.value = '';
+}
+
+// Update Active Tab Dynamic Sliding Elastic Line/Pill Position
 function updateTabIndicator() {
     const activeBtn = document.querySelector('.tab-btn-active');
     const indicator = getEl('tab-indicator');
@@ -59,7 +82,7 @@ function updateTabIndicator() {
     }
 }
 
-// Tab Switching with Smooth Spring & Sliding Animation
+// Tab Switching with Smooth Spring & Elastic Sliding Animation
 function switchTab(tabName) {
     const tabs = {
         app: { content: getEl('tab-app'), btn: getEl('tab-app-btn') },

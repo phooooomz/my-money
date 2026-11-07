@@ -17,6 +17,13 @@ z-index: 10;
 .tab-btn-active {
 color: #f0f2f5 !important;
 font-weight: 600;
+transform: scale(1.02);
+}
+/* Elastic Spring Tab Indicator Pill */
+.tab-pill-indicator {
+transition: left 0.38s cubic-bezier(0.34, 1.56, 0.64, 1),
+width 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+will-change: left, width;
 }
 /* Custom Interactive Dialog Trigger Styles for Date & Category */
 .custom-dialog-trigger {
@@ -37,12 +44,14 @@ transition: opacity 0.2s;
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
 opacity: 1;
 }
-/* Custom Alert Dialog Animation */
-#custom-alert.alert-show {
+/* Custom Alert & Feedback Modal Animations */
+#custom-alert.alert-show,
+#feedback-modal.modal-show {
 opacity: 1;
 pointer-events: auto;
 }
-#custom-alert.alert-show > div {
+#custom-alert.alert-show > div,
+#feedback-modal.modal-show > div {
 transform: scale(1);
 }
 /* Smooth Tab Content Elastic Animations */
@@ -59,12 +68,12 @@ opacity: 0;
 transform: translateY(14px) scale(0.98);
 }
 .tab-content.tab-entering {
-animation: tabEnter 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+animation: tabEnter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 @keyframes tabEnter {
 0% {
 opacity: 0;
-transform: translateY(16px) scale(0.97);
+transform: translateY(16px) scale(0.96);
 }
 100% {
 opacity: 1;

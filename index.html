@@ -30,8 +30,8 @@
                 </div>
             </div>
 
-            <!-- Animated 3-Tab Bar -->
-            <div class="relative bg-[#16181a] p-1.5 rounded-2xl border border-[#272a2e] shadow-inner">
+            <!-- Animated Ultra-Smooth 3-Tab Bar -->
+            <div class="relative bg-[#16181a] p-1.5 rounded-2xl border border-[#272a2e] shadow-inner overflow-hidden">
                 <nav id="tab-nav" class="flex gap-2 text-xs md:text-sm font-medium text-[#9ca3af] relative z-10">
                     <button id="tab-app-btn" onclick="switchTab('app')" class="tab-btn px-4 py-2 rounded-xl tab-btn-active transition-all duration-200">
                         บันทึกบัญชี
@@ -44,8 +44,8 @@
                         คุยกับ AI
                     </button>
                 </nav>
-                <!-- Dynamic Sliding Indicator Line/Pill -->
-                <div id="tab-indicator" class="absolute top-1.5 bottom-1.5 bg-[#272a2e] rounded-xl transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] border border-white/10 shadow-sm"></div>
+                <!-- Dynamic Elastic Pill Indicator -->
+                <div id="tab-indicator" class="tab-pill-indicator absolute top-1.5 bottom-1.5 bg-[#272a2e] rounded-xl border border-white/10 shadow-md"></div>
             </div>
         </header>
 
@@ -261,9 +261,15 @@
             </form>
         </main>
 
-        <!-- Footer -->
-        <footer class="mt-auto pt-6 flex flex-col items-center justify-center gap-2 text-xs text-[#9ca3af] border-t border-[#272a2e]/60">
+ <!-- Footer & Bug / Support Channel -->
+        <footer class="mt-auto pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#9ca3af] border-t border-[#272a2e]/60">
             <div>My Money App &bull; Powered by Cloudflare & Gemini AI</div>
+            <button 
+                onclick="openFeedbackModal()" 
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#16181a] border border-[#272a2e] text-[#f0f2f5] hover:border-[#6E5BFF] transition active:scale-95"
+            >
+                <span>💬 แจ้งปัญหา / แจ้งบัค</span>
+            </button>
         </footer>
 
     </div>
@@ -284,6 +290,58 @@
             >
                 ตกลง
             </button>
+        </div>
+    </div>
+
+    <!-- BUG & FEEDBACK DIALOG MODAL -->
+    <div id="feedback-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-[#16181a] border border-[#272a2e] w-full max-w-md rounded-3xl p-6 shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col gap-4">
+            <div class="flex items-center justify-between pb-3 border-b border-[#272a2e]">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">🐛</span>
+                    <h3 class="text-base font-semibold text-[#f0f2f5]">แจ้งปัญหา / แจ้งบัคระบบ</h3>
+                </div>
+                <button onclick="closeFeedbackModal()" class="text-[#9ca3af] hover:text-[#f0f2f5] text-lg font-bold">✕</button>
+            </div>
+            
+            <form onsubmit="submitFeedback(event)" class="flex flex-col gap-3">
+                <div>
+                    <label class="text-xs text-[#9ca3af] mb-1 block">ประเภทข้อคิดเห็น</label>
+                    <select id="feedback-type" class="w-full bg-[#0c0d0e] border border-[#272a2e] rounded-xl px-3.5 py-2.5 text-xs text-[#f0f2f5] focus:outline-none focus:border-[#6E5BFF] transition">
+                        <option value="🐛 แจ้งบัค / ข้อผิดพลาด">🐛 แจ้งบัค / ข้อผิดพลาด</option>
+                        <option value="💡 เสนอฟีเจอร์ใหม่">💡 เสนอฟีเจอร์ใหม่</option>
+                        <option value="❓ สอบถามการใช้งาน">❓ สอบถามการใช้งาน</option>
+                        <option value="🛠️ อื่นๆ">🛠️ อื่นๆ</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="text-xs text-[#9ca3af] mb-1 block">รายละเอียดปัญหาหรือข้อเสนอแนะ</label>
+                    <textarea 
+                        id="feedback-text" 
+                        rows="4" 
+                        required 
+                        placeholder="อธิบายรายละเอียดปัญหาที่คุณพบ หรือสิ่งที่อยากให้ปรับปรุง..." 
+                        class="w-full bg-[#0c0d0e] border border-[#272a2e] rounded-xl p-3 text-xs md:text-sm text-[#f0f2f5] focus:outline-none focus:border-[#6E5BFF] transition resize-none"
+                    ></textarea>
+                </div>
+
+                <div class="flex gap-2 mt-2">
+                    <button 
+                        type="button" 
+                        onclick="closeFeedbackModal()" 
+                        class="flex-1 py-2.5 bg-[#272a2e] text-[#9ca3af] font-medium rounded-xl text-xs hover:text-[#f0f2f5] transition"
+                    >
+                        ยกเลิก
+                    </button>
+                    <button 
+                        type="submit" 
+                        class="flex-1 py-2.5 bg-[#f0f2f5] text-[#0c0d0e] font-semibold rounded-xl text-xs hover:bg-white transition active:scale-95"
+                    >
+                        ส่งข้อความ
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
