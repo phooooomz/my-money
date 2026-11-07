@@ -4,13 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบบัญชีรายรับ-รายจ่าย & AI Assistant</title>
+    
+    <!-- PWA & Manifest Settings -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0c0d0e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0c0d0e">
 </head>
 <body class="min-h-full flex flex-col items-center justify-start p-4 md:p-10 antialiased bg-[#0c0d0e]">
 
@@ -141,7 +146,11 @@
                     <span class="text-[#f0f2f5] font-medium">Cloudflare Gemini AI Engine</span>
                     <p class="text-[#9ca3af] text-[11px]">เชื่อมต่อผ่าน Cloudflare Pages Function (API Key ปลอดภัย 100%)</p>
                 </div>
-                <span class="text-[11px] font-mono text-[#f0f2f5] bg-[#0c0d0e] px-2.5 py-1 border border-[#f0f2f5] rounded-md">Online</span>
+                <!-- Updated Status Badge with LED indicator -->
+                <span id="ai-status-badge" class="text-[11px] font-mono text-[#f0f2f5] bg-[#0c0d0e] px-2.5 py-1 border border-[#272a2e] rounded-md flex items-center gap-2">
+                    <span id="ai-status-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="ai-status-text">Online</span>
+                </span>
             </div>
 
             <!-- Quick Action Chips -->
@@ -187,6 +196,7 @@
         </main>
     </div>
 
+    <!-- Script loading at the very end to guarantee elements existence -->
     <script src="app.js"></script>
 </body>
 </html>
