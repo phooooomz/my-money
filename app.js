@@ -1,6 +1,7 @@
 // --- STATE MANAGEMENT ---
 let entries = JSON.parse(localStorage.getItem('ledger_entries') || '[]');
-let currentType = 'expense';
+let currentType = 'income'; // Default to income first
+let summaryFilter = 'all';
 
 document.addEventListener('DOMContentLoaded', () => {
     setDefaultDate();
@@ -33,12 +34,12 @@ function setEntryType(type) {
     
     if (!btnExpense || !btnIncome) return;
 
-    if (type === 'expense') {
-        btnExpense.className = 'flex-1 py-1.5 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5] transition';
-        btnIncome.className = 'flex-1 py-1.5 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5] transition';
-    } else {
+    if (type === 'income') {
         btnIncome.className = 'flex-1 py-1.5 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5] transition';
         btnExpense.className = 'flex-1 py-1.5 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5] transition';
+    } else {
+        btnExpense.className = 'flex-1 py-1.5 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5] transition';
+        btnIncome.className = 'flex-1 py-1.5 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5] transition';
     }
 }
 
@@ -107,61 +108,153 @@ function renderApp() {
     if (totalExpenseEl) totalExpenseEl.textContent = `฿${expense.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
 
     const listContainer = getEl('transaction-list');
-    if (!listContainer) return;
+    if (listContainer) {
+        if (entries.length === 0) {
+            listContainer.innerHTML = `
+                <div class="text-center py-8 text-xs text-[#9ca3af] bg-[#16181a] rounded-xl border border-[#272a2e]">
+                    ยังไม่มีรายการบันทึก
+                </div>
+            `;
+        } else {
+            listContainer.innerHTML = entries.map(item => {
+                const isExpense = item.type === 'expense';
+                const sign = isExpense ? '-' : '+';
+                const colorClass = isExpense ? 'text-rose-400' : 'text-emerald-400';
+                const displayDate = item.date || 'ไม่ระบุวันที่';
 
-    if (entries.length === 0) {
-        listContainer.innerHTML = `
-            <div class="text-center py-8 text-xs text-[#9ca3af] bg-[#16181a] rounded-xl border border-[#272a2e]">
-                ยังไม่มีรายการบันทึก
-            </div>
-        `;
-        return;
+                return `
+                    <div class="bg-[#16181a] border border-[#272a2e] rounded-xl p-3 flex items-center justify-between text-sm">
+                        <div class="flex flex-col">
+                            <span class="text-[#f0f2f5] font-medium">${escapeHtml(item.desc)}</span>
+                            <span class="text-[10px] text-[#9ca3af] font-mono mt-0.5">${displayDate}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono font-medium ${colorClass}">
+                                ${sign}฿${Number(item.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                            </span>
+                            <button onclick="deleteEntry('${item.id}')" class="text-xs text-[#9ca3af] hover:text-rose-400 transition px-1">
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
     }
 
-    listContainer.innerHTML = entries.map(item => {
-        const isExpense = item.type === 'expense';
-        const sign = isExpense ? '-' : '+';
-        const colorClass = isExpense ? 'text-rose-400' : 'text-emerald-400';
-        const displayDate = item.date || 'ไม่ระบุวันที่';
-
-        return `
-            <div class="bg-[#16181a] border border-[#272a2e] rounded-xl p-3 flex items-center justify-between text-sm">
-                <div class="flex flex-col">
-                    <span class="text-[#f0f2f5] font-medium">${escapeHtml(item.desc)}</span>
-                    <span class="text-[10px] text-[#9ca3af] font-mono mt-0.5">${displayDate}</span>
-                </div>
-                <div class="flex items-center gap-3">
-                    <span class="font-mono font-medium ${colorClass}">
-                        ${sign}฿${Number(item.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
-                    </span>
-                    <button onclick="deleteEntry('${item.id}')" class="text-xs text-[#9ca3af] hover:text-rose-400 transition px-1">
-                        ✕
-                    </button>
-                </div>
-            </div>
-        `;
-    }).join('');
+    renderSummaryTab();
 }
 
-function switchTab(tabName) {
-    const appTab = getEl('tab-app');
-    const aiTab = getEl('tab-ai');
-    const appBtn = getEl('tab-app-btn');
-    const aiBtn = getEl('tab-ai-btn');
+function setSummaryFilter(filter) {
+    summaryFilter = filter;
+    const btnAll = getEl('filter-all');
+    const btnMonth = getEl('filter-month');
+    const btnWeek = getEl('filter-week');
 
-    if (!appTab || !aiTab || !appBtn || !aiBtn) return;
+    const activeClass = 'px-3 py-1 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5] transition';
+    const inactiveClass = 'px-3 py-1 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5] transition';
 
-    if (tabName === 'app') {
-        appTab.classList.remove('hidden');
-        aiTab.classList.add('hidden');
-        appBtn.className = 'pb-2 tab-active transition-colors';
-        aiBtn.className = 'pb-2 text-[#9ca3af] hover:text-[#f0f2f5] transition-colors';
-    } else {
-        appTab.classList.add('hidden');
-        aiTab.classList.remove('hidden');
-        aiBtn.className = 'pb-2 tab-active transition-colors';
-        appBtn.className = 'pb-2 text-[#9ca3af] hover:text-[#f0f2f5] transition-colors';
+    if (btnAll) btnAll.className = filter === 'all' ? activeClass : inactiveClass;
+    if (btnMonth) btnMonth.className = filter === 'month' ? activeClass : inactiveClass;
+    if (btnWeek) btnWeek.className = filter === 'week' ? activeClass : inactiveClass;
+
+    renderSummaryTab();
+}
+
+function renderSummaryTab() {
+    const today = new Date();
+    let filteredEntries = [...entries];
+
+    if (summaryFilter === 'month') {
+        const currentYearMonth = today.toISOString().slice(0, 7);
+        filteredEntries = entries.filter(e => e.date && e.date.startsWith(currentYearMonth));
+    } else if (summaryFilter === 'week') {
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(today.getDate() - 7);
+        filteredEntries = entries.filter(e => new Date(e.date) >= sevenDaysAgo);
     }
+
+    let income = 0;
+    let expense = 0;
+    const expensesList = [];
+
+    filteredEntries.forEach(item => {
+        const val = Number(item.amount) || 0;
+        if (item.type === 'income') {
+            income += val;
+        } else {
+            expense += val;
+            expensesList.push(item);
+        }
+    });
+
+    const total = income + expense;
+    let incomePct = total > 0 ? (income / total) * 100 : 50;
+    let expensePct = total > 0 ? (expense / total) * 100 : 50;
+
+    const barIncome = getEl('bar-income');
+    const barExpense = getEl('bar-expense');
+    const ratioText = getEl('summary-ratio-text');
+    const incVal = getEl('summary-income-val');
+    const expVal = getEl('summary-expense-val');
+    const dailyAvg = getEl('daily-avg-expense');
+    const totalCountText = getEl('total-count-text');
+
+    if (barIncome) barIncome.style.width = `${incomePct}%`;
+    if (barExpense) barExpense.style.width = `${expensePct}%`;
+    if (ratioText) ratioText.textContent = `${incomePct.toFixed(1)}% รายรับ`;
+    if (incVal) incVal.textContent = `รายรับ: ฿${income.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+    if (expVal) expVal.textContent = `รายจ่าย: ฿${expense.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+
+    // Calculate Daily Average
+    const uniqueDays = new Set(filteredEntries.map(e => e.date)).size || 1;
+    const avg = expense / uniqueDays;
+    if (dailyAvg) dailyAvg.textContent = `฿${avg.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+    if (totalCountText) totalCountText.textContent = `${filteredEntries.length} รายการ`;
+
+    // Render Top Expenses
+    const topContainer = getEl('top-expenses-list');
+    if (topContainer) {
+        expensesList.sort((a, b) => b.amount - a.amount);
+        const top3 = expensesList.slice(0, 3);
+
+        if (top3.length === 0) {
+            topContainer.innerHTML = `<div class="text-xs text-[#9ca3af] py-2">ไม่มีข้อมูลรายจ่ายในช่วงเวลานี้</div>`;
+        } else {
+            topContainer.innerHTML = top3.map((item, index) => `
+                <div class="flex items-center justify-between text-xs py-1 border-b border-[#272a2e]/50 last:border-0">
+                    <span class="text-[#f0f2f5]">${index + 1}. ${escapeHtml(item.desc)}</span>
+                    <span class="font-mono text-rose-400 font-medium">฿${Number(item.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
+                </div>
+            `).join('');
+        }
+    }
+}
+
+// Tab Switching with Smooth Fade & Slide Animation
+function switchTab(tabName) {
+    const tabs = {
+        app: { content: getEl('tab-app'), btn: getEl('tab-app-btn') },
+        summary: { content: getEl('tab-summary'), btn: getEl('tab-summary-btn') },
+        ai: { content: getEl('tab-ai'), btn: getEl('tab-ai-btn') }
+    };
+
+    const inactiveClass = 'pb-2 text-[#9ca3af] hover:text-[#f0f2f5] transition-colors';
+    const activeClass = 'pb-2 tab-active transition-colors';
+
+    Object.keys(tabs).forEach(key => {
+        const item = tabs[key];
+        if (!item.content || !item.btn) return;
+
+        if (key === tabName) {
+            item.btn.className = activeClass;
+            item.content.classList.remove('tab-hidden');
+            if (key === 'summary') renderSummaryTab();
+        } else {
+            item.btn.className = inactiveClass;
+            item.content.classList.add('tab-hidden');
+        }
+    });
 }
 
 async function sendChatMessage(e) {
@@ -239,43 +332,9 @@ function escapeHtml(str) {
     });
 }
 
-// Service Worker & Test Notification Trigger
-async function registerServiceWorker() {
+function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
-        try {
-            await navigator.serviceWorker.register('/sw.js');
-        } catch (err) {
-            console.log('SW bypassed:', err);
-        }
-    }
-}
-
-async function testNotificationNow() {
-    if (!("Notification" in window)) {
-        alert("เบราว์เซอร์ของคุณไม่รองรับ Notification");
-        return;
-    }
-
-    // ขออนุญาตอัตโนมัติหากยังไม่ได้กด
-    let perm = Notification.permission;
-    if (perm === 'default') {
-        perm = await Notification.requestPermission();
-    }
-
-    if (perm === 'granted') {
-        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-            const reg = await navigator.serviceWorker.ready;
-            reg.showNotification("🔔 ทดสอบการแจ้งเตือน (18:00 น.)", {
-                body: "ระบบพร้อมส่งสรุปยอดรายวัน/รายสัปดาห์ ให้คุณตามกำหนดเวลาเรียบร้อยแล้ว!",
-                icon: "/icon-192.png"
-            });
-        } else {
-            new Notification("🔔 ทดสอบการแจ้งเตือน (18:00 น.)", {
-                body: "ระบบพร้อมส่งสรุปยอดรายวัน/รายสัปดาห์ ให้คุณตามกำหนดเวลาเรียบร้อยแล้ว!"
-            });
-        }
-    } else {
-        alert("โปรดกดอนุญาตการแจ้งเตือนในตั้งค่าเบราว์เซอร์ (รูปแม่กุญแจ 🔒 ด้านบน URL) ก่อนทดสอบครับ");
+        navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW bypass:', err));
     }
 }
 
