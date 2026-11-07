@@ -1,6 +1,7 @@
 /* Global Reset & Base Typography */
 body {
 font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+touch-action: manipulation;
 }
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
@@ -39,8 +40,9 @@ transition: transform 0.05s ease-out, box-shadow 0.05s ease-out;
 color: #9ca3af;
 position: relative;
 cursor: pointer;
-z-index: 10;
+z-index: 20;
 transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+-webkit-tap-highlight-color: transparent;
 }
 .tab-btn:active {
 transform: translateY(1.5px) scale(0.96);
@@ -54,6 +56,7 @@ font-weight: 600;
 transition: left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
 width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 will-change: left, width;
+pointer-events: none !important;
 }
 .custom-dialog-trigger {
 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);

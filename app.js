@@ -7,7 +7,9 @@ setDefaultDate();
 renderApp();
 registerServiceWorker();
 setupNetworkListeners();
+// Ensure initial tab highlight is rendered reliably
 setTimeout(updateTabIndicator, 50);
+setTimeout(updateTabIndicator, 300);
 window.addEventListener('resize', updateTabIndicator);
 });
 function getEl(id) {
@@ -35,14 +37,14 @@ const modal = getEl('custom-alert');
 if (modal) modal.classList.remove('alert-show');
 }
 function submitFeedbackTab(e) {
-e.preventDefault();
+if (e) e.preventDefault();
 const typeEl = getEl('feedback-tab-type');
 const textEl = getEl('feedback-tab-text');
 if (!textEl || !textEl.value.trim()) return;
 showAlert('ขอบคุณสำหรับข้อเสนอแนะ!', เราได้รับข้อมูล (${typeEl.value}) เรียบร้อยแล้ว ขอบคุณที่ช่วยพัฒนาแอปครับ, true);
 textEl.value = '';
 }
-// Calibrated Active Tab Dynamic Elastic Pill Indicator (Centered Precision)
+// Calibrated Active Tab Dynamic Elastic Pill Indicator (Centered Precision & Overflow Proof)
 function updateTabIndicator() {
 const activeBtn = document.querySelector('.tab-btn-active');
 const indicator = getEl('tab-indicator');
@@ -50,12 +52,15 @@ const nav = getEl('tab-nav');
 if (activeBtn && indicator && nav) {
 const navRect = nav.getBoundingClientRect();
 const btnRect = activeBtn.getBoundingClientRect();
+if (btnRect.width > 0 && navRect.width > 0) {
 const calculatedLeft = btnRect.left - navRect.left;
 const calculatedWidth = btnRect.width;
 indicator.style.width = ${calculatedWidth}px;
 indicator.style.left = ${calculatedLeft}px;
 }
 }
+}
+// Core Tab Switcher Function
 function switchTab(tabName) {
 const tabs = {
 app: { content: getEl('tab-app'), btn: getEl('tab-app-btn') },
@@ -79,7 +84,7 @@ item.content.classList.add('tab-hidden');
 item.content.classList.remove('tab-entering');
 }
 });
-updateTabIndicator();
+requestAnimationFrame(updateTabIndicator);
 }
 function setDefaultDate() {
 const dateInput = getEl('entry-date');
@@ -98,11 +103,11 @@ const btnExpense = getEl('type-expense');
 const btnIncome = getEl('type-income');
 if (!btnExpense || !btnIncome) return;
 if (type === 'income') {
-btnIncome.className = 'flex-1 py-1.5 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5] transition';
-btnExpense.className = 'flex-1 py-1.5 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5] transition';
+btnIncome.className = 'btn-dark-bounce flex-1 py-1.5 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5]';
+btnExpense.className = 'btn-dark-bounce flex-1 py-1.5 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5]';
 } else {
-btnExpense.className = 'flex-1 py-1.5 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5] transition';
-btnIncome.className = 'flex-1 py-1.5 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5] transition';
+btnExpense.className = 'btn-dark-bounce flex-1 py-1.5 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5]';
+btnIncome.className = 'btn-dark-bounce flex-1 py-1.5 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5]';
 }
 }
 function addEntry() {
@@ -178,7 +183,7 @@ const sign = isExpense ? '-' : '+';
 const colorClass = isExpense ? 'text-rose-400' : 'text-emerald-400';
 const displayDate = item.date || 'ไม่ระบุวันที่';
 const categoryTag = item.category || (isExpense ? '📦 รายจ่าย' : '💼 รายรับ');
-return <div class="bg-[#16181a] border border-[#272a2e] rounded-2xl p-3.5 flex items-center justify-between text-xs md:text-sm hover:border-white/10 transition"> <div class="flex items-center gap-3"> <span class="text-base bg-[#0c0d0e] px-2.5 py-1.5 rounded-xl border border-[#272a2e]"> ${categoryTag.split(' ')[0]} </span> <div class="flex flex-col gap-0.5"> <span class="text-[#f0f2f5] font-medium">${escapeHtml(item.desc)}</span> <div class="flex items-center gap-2"> <span class="text-[10px] text-[#9ca3af] font-mono">${displayDate}</span> <span class="text-[10px] text-[#9ca3af]">• ${categoryTag.substring(categoryTag.indexOf(' ') + 1)}</span> </div> </div> </div> <div class="flex items-center gap-3"> <span class="font-mono font-semibold ${colorClass}"> ${sign}฿${Number(item.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })} </span> <button onclick="deleteEntry('${item.id}')" class="text-xs text-[#9ca3af] hover:text-rose-400 transition px-1 py-0.5"> ✕ </button> </div> </div>;
+return <div class="bg-[#16181a] border border-[#272a2e] rounded-2xl p-3.5 flex items-center justify-between text-xs md:text-sm hover:border-white/10 transition"> <div class="flex items-center gap-3"> <span class="text-base bg-[#0c0d0e] px-2.5 py-1.5 rounded-xl border border-[#272a2e]"> ${categoryTag.split(' ')[0]} </span> <div class="flex flex-col gap-0.5"> <span class="text-[#f0f2f5] font-medium">${escapeHtml(item.desc)}</span> <div class="flex items-center gap-2"> <span class="text-[10px] text-[#9ca3af] font-mono">${displayDate}</span> <span class="text-[10px] text-[#9ca3af]">• ${categoryTag.substring(categoryTag.indexOf(' ') + 1)}</span> </div> </div> </div> <div class="flex items-center gap-3"> <span class="font-mono font-semibold ${colorClass}"> ${sign}฿${Number(item.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })} </span> <button type="button" onclick="deleteEntry('${item.id}')" class="text-xs text-[#9ca3af] hover:text-rose-400 transition px-1 py-0.5"> ✕ </button> </div> </div>;
 }).join('');
 }
 }
@@ -189,8 +194,8 @@ summaryFilter = filter;
 const btnAll = getEl('filter-all');
 const btnMonth = getEl('filter-month');
 const btnWeek = getEl('filter-week');
-const activeClass = 'px-3 py-1 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5] transition';
-const inactiveClass = 'px-3 py-1 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5] transition';
+const activeClass = 'btn-dark-bounce px-3 py-1 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5]';
+const inactiveClass = 'btn-dark-bounce px-3 py-1 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5]';
 if (btnAll) btnAll.className = filter === 'all' ? activeClass : inactiveClass;
 if (btnMonth) btnMonth.className = filter === 'month' ? activeClass : inactiveClass;
 if (btnWeek) btnWeek.className = filter === 'week' ? activeClass : inactiveClass;
@@ -253,7 +258,7 @@ return <div class="flex flex-col gap-1 py-1.5 border-b border-[#272a2e]/40 last:
 }
 }
 async function sendChatMessage(e) {
-e.preventDefault();
+if (e) e.preventDefault();
 const chatInput = getEl('chat-input');
 const chatBox = getEl('chat-box');
 const sendBtn = getEl('chat-send-btn');
