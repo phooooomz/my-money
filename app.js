@@ -1,52 +1,284 @@
-// ... existing code ...
+// --- STATE MANAGEMENT ---
+let entries = JSON.parse(localStorage.getItem('ledger_entries') || '[]');
+let currentType = 'expense';
+
+document.addEventListener('DOMContentLoaded', () => {
+    setDefaultDate();
+    renderApp();
+    registerServiceWorker();
+    setupNetworkListeners();
+});
+
+function getEl(id) {
+    return document.getElementById(id);
+}
+
+function setDefaultDate() {
+    const dateInput = getEl('entry-date');
+    if (dateInput && !dateInput.value) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+    }
+}
+
+function saveData() {
+    localStorage.setItem('ledger_entries', JSON.stringify(entries));
+    renderApp();
+}
+
+function setEntryType(type) {
+    currentType = type;
+    const btnExpense = getEl('type-expense');
+    const btnIncome = getEl('type-income');
+    
+    if (!btnExpense || !btnIncome) return;
+
+    if (type === 'expense') {
+        btnExpense.className = 'flex-1 py-1.5 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5] transition';
+        btnIncome.className = 'flex-1 py-1.5 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5] transition';
+    } else {
+        btnIncome.className = 'flex-1 py-1.5 rounded-lg text-xs font-medium bg-[#272a2e] text-[#f0f2f5] transition';
+        btnExpense.className = 'flex-1 py-1.5 rounded-lg text-xs font-medium text-[#9ca3af] hover:text-[#f0f2f5] transition';
+    }
+}
+
+function addEntry() {
+    const dateInput = getEl('entry-date');
+    const descInput = getEl('entry-desc');
+    const amountInput = getEl('entry-amount');
+
+    if (!descInput || !amountInput) return;
+
+    const desc = descInput.value.trim();
+    const amount = parseFloat(amountInput.value);
+    const dateVal = dateInput && dateInput.value ? dateInput.value : new Date().toISOString().split('T')[0];
+
+    if (!desc || isNaN(amount) || amount <= 0) {
+        alert('กรุณากรอกรายละเอียดและจำนวนเงินให้ถูกต้อง');
+        return;
+    }
+
+    const newEntry = {
+        id: Date.now().toString(),
+        type: currentType,
+        desc: desc,
+        amount: amount,
+        date: dateVal
+    };
+
+    entries.unshift(newEntry);
+    saveData();
+
+    descInput.value = '';
+    amountInput.value = '';
+    setDefaultDate();
+}
+
+function deleteEntry(id) {
+    entries = entries.filter(item => item.id !== id);
+    saveData();
+}
+
+function clearAllData() {
+    if (confirm('คุณต้องการลบข้อมูลรายการทั้งหมดใช่หรือไม่?')) {
+        entries = [];
+        saveData();
+    }
+}
+
+function renderApp() {
+    let income = 0;
+    let expense = 0;
+
+    entries.forEach(item => {
+        const val = Number(item.amount) || 0;
+        if (item.type === 'income') income += val;
+        else expense += val;
+    });
+
+    const balance = income - expense;
+
+    const totalBalanceEl = getEl('total-balance');
+    const totalIncomeEl = getEl('total-income');
+    const totalExpenseEl = getEl('total-expense');
+
+    if (totalBalanceEl) totalBalanceEl.textContent = `฿${balance.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+    if (totalIncomeEl) totalIncomeEl.textContent = `฿${income.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+    if (totalExpenseEl) totalExpenseEl.textContent = `฿${expense.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+
+    const listContainer = getEl('transaction-list');
+    if (!listContainer) return;
+
+    if (entries.length === 0) {
+        listContainer.innerHTML = `
+            <div class="text-center py-8 text-xs text-[#9ca3af] bg-[#16181a] rounded-xl border border-[#272a2e]">
+                ยังไม่มีรายการบันทึก
+            </div>
+        `;
+        return;
+    }
+
+    listContainer.innerHTML = entries.map(item => {
+        const isExpense = item.type === 'expense';
+        const sign = isExpense ? '-' : '+';
+        const colorClass = isExpense ? 'text-rose-400' : 'text-emerald-400';
+        const displayDate = item.date || 'ไม่ระบุวันที่';
+
+        return `
+            <div class="bg-[#16181a] border border-[#272a2e] rounded-xl p-3 flex items-center justify-between text-sm">
+                <div class="flex flex-col">
+                    <span class="text-[#f0f2f5] font-medium">${escapeHtml(item.desc)}</span>
+                    <span class="text-[10px] text-[#9ca3af] font-mono mt-0.5">${displayDate}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="font-mono font-medium ${colorClass}">
+                        ${sign}฿${Number(item.amount).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                    </span>
+                    <button onclick="deleteEntry('${item.id}')" class="text-xs text-[#9ca3af] hover:text-rose-400 transition px-1">
+                        ✕
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function switchTab(tabName) {
+    const appTab = getEl('tab-app');
+    const aiTab = getEl('tab-ai');
+    const appBtn = getEl('tab-app-btn');
+    const aiBtn = getEl('tab-ai-btn');
+
+    if (!appTab || !aiTab || !appBtn || !aiBtn) return;
+
+    if (tabName === 'app') {
+        appTab.classList.remove('hidden');
+        aiTab.classList.add('hidden');
+        appBtn.className = 'pb-2 tab-active transition-colors';
+        aiBtn.className = 'pb-2 text-[#9ca3af] hover:text-[#f0f2f5] transition-colors';
+    } else {
+        appTab.classList.add('hidden');
+        aiTab.classList.remove('hidden');
+        aiBtn.className = 'pb-2 tab-active transition-colors';
+        appBtn.className = 'pb-2 text-[#9ca3af] hover:text-[#f0f2f5] transition-colors';
+    }
+}
+
+async function sendChatMessage(e) {
+    e.preventDefault();
+    const chatInput = getEl('chat-input');
+    const chatBox = getEl('chat-box');
+    const sendBtn = getEl('chat-send-btn');
+
+    if (!chatInput || !chatBox) return;
+
+    const userText = chatInput.value.trim();
+    if (!userText) return;
+
+    appendChatMessage('user', userText);
+    chatInput.value = '';
+
+    if (sendBtn) sendBtn.disabled = true;
+
+    const loadingId = 'loading-' + Date.now();
+    appendChatMessage('ai', 'กำลังคิดคำตอบ...', loadingId);
+
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt: userText,
+                records: entries
+            })
+        });
+
+        const data = await response.json();
+        removeMessage(loadingId);
+
+        if (data.reply) {
+            appendChatMessage('ai', data.reply);
+        } else {
+            appendChatMessage('ai', 'เกิดข้อผิดพลาด: ' + (data.error || 'ไม่สามารถรับข้อมูลได้'));
+        }
+    } catch (err) {
+        removeMessage(loadingId);
+        appendChatMessage('ai', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้');
+    } finally {
+        if (sendBtn) sendBtn.disabled = false;
+    }
+}
+
+function appendChatMessage(sender, text, id = null) {
+    const chatBox = getEl('chat-box');
+    if (!chatBox) return;
+
+    const msgDiv = document.createElement('div');
+    if (id) msgDiv.id = id;
+
+    if (sender === 'user') {
+        msgDiv.className = 'bg-[#f0f2f5] text-[#0c0d0e] p-3 rounded-xl max-w-[85%] self-end font-medium';
+    } else {
+        msgDiv.className = 'bg-[#272a2e]/50 text-[#f0f2f5] p-3 rounded-xl max-w-[85%] self-start border border-[#272a2e] whitespace-pre-wrap';
+    }
+
+    msgDiv.textContent = text;
+    chatBox.appendChild(msgDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
 function removeMessage(id) {
     if (!id) return;
     const el = document.getElementById(id);
     if (el) el.remove();
 }
 
-// Service Worker Registration & Notification Toggle Flow
+function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+    });
+}
+
+// Notification Toggle & Service Worker Logic
 async function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         try {
             await navigator.serviceWorker.register('/sw.js');
         } catch (err) {
-            console.log('SW registration bypassed:', err);
+            console.log('SW Registration bypassed:', err);
         }
     }
     updateNotifyButton();
 }
 
-// Safe Notification Handler with direct permission trigger
 async function toggleNotifications() {
     if (!('Notification' in window)) {
-        alert('เบราว์เซอร์หรืออุปกรณ์นี้ยังไม่รองรับ Web Push Notification ครับ');
+        alert('เบราว์เซอร์นี้ไม่รองรับระบบการแจ้งเตือนครับ');
+        return;
+    }
+
+    // Checking permission state
+    if (Notification.permission === 'denied') {
+        alert("⚠️ การแจ้งเตือนถูกบล็อกอยู่!\n\nโปรดไปที่การตั้งค่าเบราว์เซอร์ของคุณ:\n1. กดที่ไอคอน รูปแม่กุญแจ 🔒 หรือรูปตั้งค่า ข้างแถบใส่ URL ด้านบน\n2. เลือกที่ 'การตั้งค่าเว็บไซต์' (Site Settings) หรือ 'การแจ้งเตือน'\n3. เปลี่ยนจาก 'บล็อก' ให้เป็น 'อนุญาต' (Allow)");
         return;
     }
 
     try {
-        // Trigger browser's native permission popup
         const permission = await Notification.requestPermission();
-
         if (permission === 'granted') {
-            // Update button UI & hide test controls smoothly
             updateNotifyButton();
-            // Fire a quick test notification to confirm setup
             triggerTestNotification();
         } else if (permission === 'denied') {
-            alert('เบราว์เซอร์ถูกตั้งค่าบล็อกการแจ้งเตือนไว้ โปรดเข้าไปกดอนุญาต (Allow) ในการตั้งค่าเว็บไซต์ของเบราว์เซอร์');
+            alert("คุณได้ปฏิเสธการรับแจ้งเตือน หากต้องการเปิดใช้งานย้อนหลัง โปรดเปิดสิทธิ์ในการตั้งค่าเบราว์เซอร์");
             updateNotifyButton();
         }
     } catch (e) {
-        console.error("Notification permission error:", e);
-        alert('ไม่สามารถเปิดแจ้งเตือนได้: ' + (e.message || 'เกิดข้อผิดพลาด'));
+        alert("ไม่สามารถเปิดแจ้งเตือนได้: " + (e.message || "เกิดข้อผิดพลาด"));
     }
 }
 
 function triggerTestNotification() {
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
-        return;
-    }
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
 
     const title = "🔔 ระบบบันทึกบัญชี";
     const options = {
@@ -65,7 +297,7 @@ function triggerTestNotification() {
             new Notification(title, options);
         }
     } catch (e) {
-        console.error("Trigger notification fail:", e);
+        console.log('Notification trigger fallback:', e);
     }
 }
 
@@ -76,8 +308,8 @@ function updateNotifyButton() {
 
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
         btn.textContent = 'เปิดใช้งานแล้ว';
-        btn.onclick = null; // Disable button re-trigger when already granted
-        btn.className = 'px-3 py-1 rounded-md bg-emerald-950/60 border border-emerald-800 text-emerald-400 font-medium text-xs cursor-default';
+        btn.onclick = triggerTestNotification;
+        btn.className = 'px-3 py-1 rounded-md bg-emerald-950/60 border border-emerald-800 text-emerald-400 font-medium text-xs cursor-pointer hover:bg-emerald-900/60 transition';
         if (testBtn) testBtn.classList.remove('hidden');
     } else {
         btn.textContent = 'เปิดแจ้งเตือน';
@@ -87,5 +319,26 @@ function updateNotifyButton() {
     }
 }
 
-// Function to update the Online/Offline status badge
-// ... existing code ...
+function setupNetworkListeners() {
+    const updateOnlineStatus = () => {
+        const statusBadge = getEl('network-status');
+        const statusDot = getEl('network-dot');
+        const statusText = getEl('network-text');
+
+        if (!statusBadge || !statusDot || !statusText) return;
+
+        if (navigator.onLine) {
+            statusBadge.className = "flex items-center gap-2 px-3 py-1 rounded-full border bg-emerald-950/40 border-emerald-900/60 text-emerald-400 text-xs transition-colors duration-300";
+            statusDot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+            statusText.textContent = "Online";
+        } else {
+            statusBadge.className = "flex items-center gap-2 px-3 py-1 rounded-full border bg-rose-950/40 border-rose-900/60 text-rose-400 text-xs transition-colors duration-300";
+            statusDot.className = "w-2 h-2 rounded-full bg-rose-500";
+            statusText.textContent = "Offline";
+        }
+    };
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+}
