@@ -55,33 +55,90 @@ async function exportDataPDF() {
         });
     }
 
-    // 3. Generate PDF Document using html2pdf.js targeting A4 Standard Dimensions
+    // 3. Render template to canvas, then build the A4 PDF page by page
     const element = document.getElementById('pdf-statement-template');
-    const opt = {
-        margin:       [0.4, 0.4, 0.4, 0.4],
-        filename:     `P5_Devices_Statement_${new Date().toISOString().split('T')[0]}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  {
-            scale: 2,
+    const filename = `P5_Devices_Statement_${new Date().toISOString().split('T')[0]}.pdf`;
+
+    try {
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+
+        const PDF_CSS_WIDTH = 720; // must match the template width in index.html
+
+        // Row bottoms (in CSS px, relative to the template) so pages break between rows, not through them
+        const elTop = element.getBoundingClientRect().top;
+        const rowBreaks = Array.from(element.querySelectorAll('#pdf-table-body tr'))
+            .map(tr => tr.getBoundingClientRect().bottom - elTop);
+
+        // Keep the canvas under browser size limits when there are many rows
+        const scale = Math.max(1, Math.min(2, 14000 / element.offsetHeight));
+
+        const canvas = await html2canvas(element, {
+            scale,
             logging: false,
             useCORS: true,
+            backgroundColor: '#FFFFFF',
+            width: PDF_CSS_WIDTH,
+            windowWidth: PDF_CSS_WIDTH,
             scrollX: 0,
-            scrollY: 0,
-            // Render at a fixed desktop-like width so the page isn't clipped by a narrow phone viewport
-            windowWidth: 800
-        },
-        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait', compress: true },
-        pagebreak:    { mode: ['css', 'legacy'], avoid: ['tr', 'h3'] }
-    };
-
-    setTimeout(() => {
-        html2pdf().set(opt).from(element).save().then(() => {
-            showToast("ดาวน์โหลด PDF Statement เรียบร้อย", "success");
-        }).catch(err => {
-            console.error("PDF Export error:", err);
-            showToast("เกิดข้อผิดพลาดในการสร้าง PDF", "error");
+            scrollY: 0
         });
-    }, 150);
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+
+        const PAGE_W = 210, PAGE_H = 297, MARGIN = 10;
+        const contentW = PAGE_W - MARGIN * 2;
+        const mmPerCssPx = contentW / PDF_CSS_WIDTH;
+        const pageCssH = (PAGE_H - MARGIN * 2) / mmPerCssPx;
+        const pxPerCss = canvas.width / PDF_CSS_WIDTH;
+        const totalCssH = canvas.height / pxPerCss;
+
+        const slices = computePdfPageSlices(totalCssH, pageCssH, rowBreaks);
+
+        slices.forEach((sl, i) => {
+            const sy = Math.round(sl.start * pxPerCss);
+            const sh = Math.min(Math.ceil((sl.end - sl.start) * pxPerCss), canvas.height - sy);
+            if (sh <= 0) return;
+
+            const pageCanvas = document.createElement('canvas');
+            pageCanvas.width = canvas.width;
+            pageCanvas.height = sh;
+            const ctx = pageCanvas.getContext('2d');
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+            ctx.drawImage(canvas, 0, sy, canvas.width, sh, 0, 0, canvas.width, sh);
+
+            if (i > 0) pdf.addPage();
+            pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.95), 'JPEG', MARGIN, MARGIN, contentW, (sh / pxPerCss) * mmPerCssPx, undefined, 'FAST');
+        });
+
+        pdf.save(filename);
+        showToast("ดาวน์โหลด PDF Statement เรียบร้อย", "success");
+    } catch (err) {
+        console.error("PDF Export error:", err);
+        showToast("เกิดข้อผิดพลาดในการสร้าง PDF", "error");
+    }
+}
+
+/**
+ * Split a tall render into A4 pages. Breaks land on a table-row boundary when possible.
+ * All numbers are CSS px relative to the top of the template.
+ */
+function computePdfPageSlices(totalH, pageH, rowBreaks) {
+    const slices = [];
+    let start = 0;
+    while (start < totalH - 1) {
+        let end = start + pageH;
+        if (end >= totalH) {
+            end = totalH;
+        } else {
+            const fits = rowBreaks.filter(b => b > start + 40 && b <= end);
+            if (fits.length) end = fits[fits.length - 1];
+        }
+        slices.push({ start, end });
+        start = end;
+    }
+    return slices;
 }
 
 async function exportDataCSV() {
