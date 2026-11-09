@@ -206,7 +206,7 @@
                             <div class="mt-4">
                                 <h3 id="dash-income" class="text-2xl md:text-3xl font-bold text-incomeGreen tracking-tight">฿0.00</h3>
                                 <p class="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                                    <i class="fa-solid fa-arrow-down-left text-incomeGreen text-[10px]"></i>
+                                    <i class="fa-solid fa-arrow-down text-incomeGreen text-[10px]"></i>
                                     <span>สะสมทั้งหมด</span>
                                 </p>
                             </div>
@@ -223,7 +223,7 @@
                             <div class="mt-4">
                                 <h3 id="dash-expense" class="text-2xl md:text-3xl font-bold text-expenseRed tracking-tight">฿0.00</h3>
                                 <p class="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                                    <i class="fa-solid fa-arrow-up-right text-expenseRed text-[10px]"></i>
+                                    <i class="fa-solid fa-arrow-up text-expenseRed text-[10px]"></i>
                                     <span>สะสมทั้งหมด</span>
                                 </p>
                             </div>
@@ -243,7 +243,7 @@
                         </div>
                     </div>
 
-     !-- Chart & Analytics Preview Section -->
+                    <!-- Chart & Analytics Preview Section -->
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-2 bg-darkCard border border-darkBorder p-5 rounded-2xl flex flex-col justify-between">
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
@@ -402,7 +402,7 @@
                         <div class="bg-darkCard border border-darkBorder p-5 rounded-2xl space-y-4">
                             <div class="flex items-center space-x-3 pb-3 border-b border-darkBorder">
                                 <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-incomeGreen flex items-center justify-center">
-                                    <i class="fa-solid fa-arrow-down-left"></i>
+                                    <i class="fa-solid fa-hand-holding-dollar"></i>
                                 </div>
                                 <h3 class="font-bold text-lg text-white">หมวดหมู่รายรับ</h3>
                             </div>
@@ -412,7 +412,7 @@
                         <div class="bg-darkCard border border-darkBorder p-5 rounded-2xl space-y-4">
                             <div class="flex items-center space-x-3 pb-3 border-b border-darkBorder">
                                 <div class="w-8 h-8 rounded-lg bg-rose-500/10 text-expenseRed flex items-center justify-center">
-                                    <i class="fa-solid fa-arrow-up-right"></i>
+                                    <i class="fa-solid fa-money-bill-transfer"></i>
                                 </div>
                                 <h3 class="font-bold text-lg text-white">หมวดหมู่รายจ่าย</h3>
                             </div>
@@ -475,13 +475,13 @@
     <!-- MOBILE BOTTOM NAVIGATION TAB BAR (FLOATING NAV) -->
     <div class="md:hidden fixed bottom-3 left-3 right-3 z-30">
         <nav class="bg-darkSurface/90 backdrop-blur-xl border border-darkBorder rounded-2xl p-2 flex items-center justify-around shadow-2xl floating-nav-bar">
-            <button onclick="switchTab('dashboard')" id="mob-nav-dashboard" class="mob-nav-item active-nav flex flex-col items-center py-2 px-3 rounded-xl transition text-bankingBlue bg-bankingBlue/20 relative">
+            <button onclick="switchTab('dashboard')" id="mob-nav-dashboard" class="mob-nav-item active-nav flex flex-col items-center justify-center w-[68px] py-2 rounded-xl transition text-bankingBlue bg-bankingBlue/20 relative">
                 <i class="fa-solid fa-chart-pie text-lg mb-0.5"></i>
                 <span class="text-[10px] font-medium">แดชบอร์ด</span>
                 <span class="active-dot absolute -top-1 w-1.5 h-1.5 rounded-full bg-bankingBlue"></span>
             </button>
 
-            <button onclick="switchTab('transactions')" id="mob-nav-transactions" class="mob-nav-item flex flex-col items-center py-2 px-3 rounded-xl transition text-gray-400 relative">
+            <button onclick="switchTab('transactions')" id="mob-nav-transactions" class="mob-nav-item flex flex-col items-center justify-center w-[68px] py-2 rounded-xl transition text-gray-400 relative">
                 <i class="fa-solid fa-receipt text-lg mb-0.5"></i>
                 <span class="text-[10px] font-medium">ประวัติ</span>
                 <span class="active-dot hidden absolute -top-1 w-1.5 h-1.5 rounded-full bg-bankingBlue"></span>
@@ -494,13 +494,13 @@
                 <span class="text-[9px] text-gray-400 font-medium mt-1">เพิ่ม</span>
             </button>
 
-            <button onclick="switchTab('analytics')" id="mob-nav-analytics" class="mob-nav-item flex flex-col items-center py-2 px-3 rounded-xl transition text-gray-400 relative">
+            <button onclick="switchTab('analytics')" id="mob-nav-analytics" class="mob-nav-item flex flex-col items-center justify-center w-[68px] py-2 rounded-xl transition text-gray-400 relative">
                 <i class="fa-solid fa-chart-line text-lg mb-0.5"></i>
                 <span class="text-[10px] font-medium">วิเคราะห์</span>
                 <span class="active-dot hidden absolute -top-1 w-1.5 h-1.5 rounded-full bg-bankingBlue"></span>
             </button>
 
-            <button onclick="switchTab('settings')" id="mob-nav-settings" class="mob-nav-item flex flex-col items-center py-2 px-3 rounded-xl transition text-gray-400 relative">
+            <button onclick="switchTab('settings')" id="mob-nav-settings" class="mob-nav-item flex flex-col items-center justify-center w-[68px] py-2 rounded-xl transition text-gray-400 relative">
                 <i class="fa-solid fa-sliders text-lg mb-0.5"></i>
                 <span class="text-[10px] font-medium">ตั้งค่า</span>
                 <span class="active-dot hidden absolute -top-1 w-1.5 h-1.5 rounded-full bg-bankingBlue"></span>
@@ -508,10 +508,43 @@
         </nav>
     </div>
 
+
+    <!-- EXPANDABLE CONTACT & RATING WIDGET -->
+    <div id="contact-widget" class="fixed right-4 bottom-28 md:bottom-6 md:right-6 z-30">
+        <div id="cw-panel" class="cw-panel" role="dialog" aria-label="ติดต่อและให้คะแนน" aria-hidden="true">
+            <div class="flex items-center justify-between px-4 pt-4 pb-2">
+                <h3 class="font-bold text-white text-base">ติดต่อเรา</h3>
+                <button type="button" onclick="toggleContactWidget(false)" class="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-darkSurface transition" aria-label="ปิด">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div id="cw-contact-list" class="px-3 pb-3 space-y-1.5"></div>
+
+            <div class="border-t border-darkBorder px-4 py-4 text-center">
+                <p class="text-xs font-medium text-gray-300 mb-2">ให้คะแนนเว็บนี้</p>
+                <div id="cw-rating" class="cw-rating">
+                    <div id="cw-stars" class="cw-stars">
+                        <button type="button" class="cw-star" data-value="1" aria-label="1 ดาว"><i class="fa-solid fa-star"></i></button>
+                        <button type="button" class="cw-star" data-value="2" aria-label="2 ดาว"><i class="fa-solid fa-star"></i></button>
+                        <button type="button" class="cw-star" data-value="3" aria-label="3 ดาว"><i class="fa-solid fa-star"></i></button>
+                        <button type="button" class="cw-star" data-value="4" aria-label="4 ดาว"><i class="fa-solid fa-star"></i></button>
+                        <button type="button" class="cw-star" data-value="5" aria-label="5 ดาว"><i class="fa-solid fa-star"></i></button>
+                    </div>
+                    <div id="cw-thanks" class="cw-thanks">ขอบคุณ!</div>
+                </div>
+                <button type="button" id="cw-rerate" onclick="resetRating()" class="hidden mt-2 text-[11px] text-bankingBlue hover:underline">ให้คะแนนใหม่</button>
+            </div>
+        </div>
+
+        <button type="button" id="cw-fab" onclick="toggleContactWidget()" class="cw-fab" aria-label="ติดต่อและให้คะแนน" aria-expanded="false">
+            <i id="cw-fab-icon" class="fa-solid fa-headset"></i>
+        </button>
+    </div>
    
     <!-- HIDDEN PDF STATEMENT TEMPLATE (OPTIMIZED FOR A4 & FONT SAFE) -->
     <div class="fixed top-[-9999px] left-[-9999px]">
-        <div id="pdf-statement-template" style="width: 700px; padding: 30px; background-color: #FFFFFF; color: #1E293B; font-family: 'Kanit', sans-serif;">
+        <div id="pdf-statement-template" style="width: 720px; box-sizing: border-box; padding: 28px; background-color: #FFFFFF; color: #1E293B; font-family: 'Kanit', sans-serif;">
             <!-- Statement Header -->
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2563EB; padding-bottom: 15px; margin-bottom: 20px;">
                 <div>
@@ -544,7 +577,7 @@
             <!-- Transaction Table Section -->
             <div style="margin-bottom: 20px;">
                 <h3 style="font-size: 11px; font-weight: bold; color: #1E293B; margin: 0 0 8px 0; border-left: 3px solid #2563EB; padding-left: 6px;">ประวัติรายการธุรกรรมทั้งหมด</h3>
-                <table style="width: 100%; font-size: 10px; border-collapse: collapse; border: 1px solid #E2E8F0;">
+                <table style="width: 100%; table-layout: fixed; font-size: 10px; border-collapse: collapse; border: 1px solid #E2E8F0;">
                     <thead>
                         <tr style="background-color: #1E3A8A; color: #FFFFFF; font-weight: bold;">
                             <th style="padding: 8px 10px; border: 1px solid #CBD5E1; text-align: left; width: 15%;">วันที่</th>
@@ -654,5 +687,6 @@
     <script src="app.js"></script>
     <script src="pin-system.js"></script>
     <script src="statement-exporter.js"></script>
+    <script src="contact-widget.js"></script>
 </body>
 </html>

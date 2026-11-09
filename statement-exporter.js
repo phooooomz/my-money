@@ -61,8 +61,17 @@ async function exportDataPDF() {
         margin:       [0.4, 0.4, 0.4, 0.4],
         filename:     `P5_Devices_Statement_${new Date().toISOString().split('T')[0]}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, logging: false, useCORS: true },
-        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+        html2canvas:  {
+            scale: 2,
+            logging: false,
+            useCORS: true,
+            scrollX: 0,
+            scrollY: 0,
+            // Render at a fixed desktop-like width so the page isn't clipped by a narrow phone viewport
+            windowWidth: 800
+        },
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait', compress: true },
+        pagebreak:    { mode: ['css', 'legacy'], avoid: ['tr', 'h3'] }
     };
 
     setTimeout(() => {

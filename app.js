@@ -111,13 +111,16 @@ function getCategoryIconClass(categoryName, type) {
     if (cat.includes('อาหาร') || cat.includes('กิน') || cat.includes('เครื่องดื่ม')) return 'fa-utensils';
     if (cat.includes('เดินทาง') || cat.includes('รถ') || cat.includes('น้ำมัน')) return 'fa-car';
     if (cat.includes('ช้อปปิ้ง') || cat.includes('ซื้อของ')) return 'fa-bag-shopping';
-    if (cat.includes('บิล') || cat.includes('ไฟ') || cat.includes('น้ำ') || cat.includes('เน็ต')) return 'fa-receipt';
+    if (cat.includes('บิล') || cat.includes('ไฟ') || cat.includes('น้ำ') || cat.includes('เน็ต')) return 'fa-file-invoice-dollar';
+    if (cat.includes('ประจำ')) return 'fa-rotate';
     if (cat.includes('สุขภาพ') || cat.includes('ยา') || cat.includes('หมอ')) return 'fa-heart-pulse';
     if (cat.includes('บันเทิง') || cat.includes('หนัง') || cat.includes('เกม')) return 'fa-gamepad';
     if (cat.includes('เงินเดือน') || cat.includes('รายได้')) return 'fa-money-bill-wave';
-    if (cat.includes('โบนัส') || cat.includes('งานเสริม')) return 'fa-briefcase';
+    if (cat.includes('โบนัส')) return 'fa-gift';
+    if (cat.includes('งานเสริม')) return 'fa-briefcase';
+    if (cat.includes('อื่น')) return 'fa-ellipsis';
 
-    return type === 'income' ? 'fa-arrow-down-left' : 'fa-arrow-up-right';
+    return type === 'income' ? 'fa-hand-holding-dollar' : 'fa-money-bill-transfer';
 }
 
 /**
