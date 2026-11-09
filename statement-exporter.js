@@ -3,7 +3,7 @@
  */
 
 async function exportDataPDF() {
-    showToast("กำลังเตรียมไฟล์ PDF Statement...", "info");
+    showToast("กำลังเตรียมไฟล์ PDF Statement (v2)...", "info");
 
     const allTx = await db.transactions.orderBy('date').reverse().toArray();
     let totalIncomeSatang = 0;
