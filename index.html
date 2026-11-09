@@ -262,10 +262,6 @@
                                 </div>
                                 <div id="dash-recent-list" class="space-y-3"></div>
                             </div>
-                            <button onclick="openTransactionModal()" class="w-full mt-4 py-2.5 bg-darkSurface hover:bg-darkBorder border border-darkBorder rounded-xl text-sm font-medium text-gray-300 transition flex items-center justify-center space-x-2">
-                                <i class="fa-solid fa-plus text-xs"></i>
-                                <span>เพิ่มรายการใหม่</span>
-                            </button>
                         </div>
                     </div>
                 </section>
@@ -428,7 +424,7 @@
                         <div class="bg-darkCard border border-darkBorder p-6 rounded-2xl space-y-5">
                             <div class="flex items-center space-x-3 pb-3 border-b border-darkBorder">
                                 <i class="fa-solid fa-file-pdf text-bankingBlue text-xl"></i>
-                                <h3 class="font-bold text-lg text-white">รายงานทางการเงิน (Statement)</h3>
+                                <h3 class="font-bold text-lg text-white">รายงานทางการเงิน (Statement & Exports)</h3>
                             </div>
 
                             <div class="space-y-2">
@@ -452,11 +448,17 @@
                                 <h3 class="font-bold text-lg text-white">ความปลอดภัยและการตั้งค่า PIN</h3>
                             </div>
                             <div class="space-y-3">
-                                <p class="text-xs text-gray-400">จัดการความปลอดภัย PIN 6 หลักในการเข้าใช้งานแอปพลิเคชัน</p>
-                                <button onclick="triggerChangePin()" class="w-full py-2.5 bg-darkSurface hover:bg-darkBorder border border-darkBorder rounded-xl text-sm font-medium text-white transition flex items-center justify-center space-x-2">
-                                    <i class="fa-solid fa-key text-yellow-500"></i>
-                                    <span>เปลี่ยนรหัส PIN 6 หลัก</span>
-                                </button>
+                                <p class="text-xs text-gray-400">จัดการรหัสผ่าน PIN 6 หลักสำหรับการเปิดเข้าใช้งานแอปพลิเคชัน</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <button onclick="triggerChangePin()" class="w-full py-2.5 bg-darkSurface hover:bg-darkBorder border border-darkBorder rounded-xl text-sm font-medium text-white transition flex items-center justify-center space-x-2">
+                                        <i class="fa-solid fa-key text-yellow-500"></i>
+                                        <span>ตั้งค่า / เปลี่ยนรหัส PIN</span>
+                                    </button>
+                                    <button onclick="triggerRemovePin()" class="w-full py-2.5 bg-darkSurface hover:bg-rose-500/10 border border-darkBorder hover:border-rose-500/30 rounded-xl text-sm font-medium text-rose-400 transition flex items-center justify-center space-x-2">
+                                        <i class="fa-solid fa-lock-open"></i>
+                                        <span>ยกเลิกการใช้งาน PIN</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -650,7 +652,9 @@
         </div>
     </div>
 
-    <!-- External JavaScript Application Code -->
+    <!-- External JavaScript Application Modules -->
     <script src="app.js"></script>
+    <script src="pin-system.js"></script>
+    <script src="statement-exporter.js"></script>
 </body>
 </html>
