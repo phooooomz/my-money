@@ -1,11 +1,7 @@
 /**
- * FINANCIAL REPORT & STATEMENT EXPORTER MODULE
- * Handles generating PDF Bank Statements & CSV exports.
+ * FINANCIAL REPORT & STATEMENT EXPORTER MODULE (A4 Standard Optimized)
  */
 
-/**
- * Generate & Download PDF Bank Statement (A4 Formatted, Chart Excluded)
- */
 async function exportDataPDF() {
     showToast("กำลังเตรียมไฟล์ PDF Statement...", "info");
 
@@ -20,33 +16,40 @@ async function exportDataPDF() {
 
     const netBalanceSatang = totalIncomeSatang - totalExpenseSatang;
 
-    // 1. Fill Header & Summary Data
+    // Format numbers safely without unicode currency symbols that break jsPDF default fonts
+    const formatSafeTHB = (satangInt) => {
+        const val = (parseInt(satangInt) || 0) / 100;
+        return val.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' THB';
+    };
+
+    // 1. Fill Header & Summary Data safely
     document.getElementById('pdf-date').textContent = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
-    document.getElementById('pdf-net-balance').textContent = Satang.formatTHB(netBalanceSatang);
-    document.getElementById('pdf-total-income').textContent = Satang.formatTHB(totalIncomeSatang);
-    document.getElementById('pdf-total-expense').textContent = Satang.formatTHB(totalExpenseSatang);
+    document.getElementById('pdf-net-balance').textContent = formatSafeTHB(netBalanceSatang);
+    document.getElementById('pdf-total-income').textContent = formatSafeTHB(totalIncomeSatang);
+    document.getElementById('pdf-total-expense').textContent = formatSafeTHB(totalExpenseSatang);
 
     // 2. Populate Transaction Table inside PDF Template
     const tbody = document.getElementById('pdf-table-body');
     tbody.innerHTML = '';
 
     if (allTx.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-3 px-4 text-center text-slate-400 font-normal">ไม่มีข้อมูลรายการธุรกรรม</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400 font-normal">ไม่มีข้อมูลรายการธุรกรรม</td></tr>`;
     } else {
         allTx.forEach(t => {
             const isIncome = t.type === 'income';
             const sign = isIncome ? '+' : '-';
-            const textColor = isIncome ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold';
+            const textColor = isIncome ? 'color: #059669; font-weight: 600;' : 'color: #E11D48; font-weight: 600;';
             const typeLabel = isIncome ? 'รายรับ' : 'รายจ่าย';
+            const formattedAmt = sign + (t.amountSatang / 100).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' THB';
 
             const tr = document.createElement('tr');
-            tr.className = 'border-b border-slate-200 hover:bg-slate-50';
+            tr.style.borderBottom = '1px solid #E2E8F0';
             tr.innerHTML = `
-                <td class="py-2 px-3 text-slate-600">${formatThaiDate(t.date)}</td>
-                <td class="py-2 px-3 font-medium text-slate-800">${escapeHtml(t.title)}${t.note ? ` <span class="text-[10px] text-slate-400">(${escapeHtml(t.note)})</span>` : ''}</td>
-                <td class="py-2 px-3 text-slate-600">${escapeHtml(t.category)}</td>
-                <td class="py-2 px-3 text-center font-medium text-slate-600">${typeLabel}</td>
-                <td class="py-2 px-3 text-right ${textColor}">${sign}${Satang.formatTHB(t.amountSatang)}</td>
+                <td style="padding: 10px 12px; color: #475569; white-space: nowrap;">${formatThaiDate(t.date)}</td>
+                <td style="padding: 10px 12px; font-weight: 500; color: #1E293B;">${escapeHtml(t.title)}${t.note ? ` <span style="font-size: 9px; color: #94A3B8;">(${escapeHtml(t.note)})</span>` : ''}</td>
+                <td style="padding: 10px 12px; color: #475569;">${escapeHtml(t.category)}</td>
+                <td style="padding: 10px 12px; text-align: center; font-weight: 500; color: #475569;">${typeLabel}</td>
+                <td style="padding: 10px 12px; text-align: right; ${textColor}">${formattedAmt}</td>
             `;
             tbody.appendChild(tr);
         });
@@ -69,12 +72,9 @@ async function exportDataPDF() {
             console.error("PDF Export error:", err);
             showToast("เกิดข้อผิดพลาดในการสร้าง PDF", "error");
         });
-    }, 100);
+    }, 150);
 }
 
-/**
- * Generate & Download CSV File
- */
 async function exportDataCSV() {
     showToast("กำลังเตรียมส่งออกไฟล์ CSV...", "info");
     const txs = await db.transactions.orderBy('date').reverse().toArray();
