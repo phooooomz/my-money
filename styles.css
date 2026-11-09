@@ -1,22 +1,52 @@
+/* Custom Styles, Animations & Micro-interactions */
 body {
 font-family: 'Kanit', 'Inter', sans-serif;
-background-color: #0D0F12;
+background-color: #090D16;
 color: #F3F4F6;
+overflow-x: hidden;
 }
-/* Custom Scrollbars */
+/* Scrollbar Customization */
 ::-webkit-scrollbar {
 width: 6px;
 height: 6px;
 }
 ::-webkit-scrollbar-track {
-background: #161B22;
+background: #111827;
 }
 ::-webkit-scrollbar-thumb {
-background: #30363D;
-border-radius: 3px;
+background: #374151;
+border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-background: #484F58;
+background: #4B5563;
+}
+/* Tab Content Switch Animation */
+.tab-content {
+animation: fadeInSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes fadeInSlide {
+from {
+opacity: 0;
+transform: translateY(10px);
+}
+to {
+opacity: 1;
+transform: translateY(0);
+}
+}
+/* Modal Pop Animation */
+@keyframes modalPop {
+from {
+opacity: 0;
+transform: scale(0.92) translateY(12px);
+}
+to {
+opacity: 1;
+transform: scale(1) translateY(0);
+}
+}
+.animate-modalPop {
+animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 /* PIN Error Shake Animation */
 .shake-animation {
@@ -27,4 +57,32 @@ animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
 20%, 80% { transform: translate3d(2px, 0, 0); }
 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
 40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+/* Floating Tab Bar Glow */
+.shadow-glow {
+box-shadow: 0 0 12px rgba(37, 99, 235, 0.6);
+}
+.floating-nav-bar {
+box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(55, 65, 81, 0.4);
+}
+.mob-nav-item.active-nav {
+background-color: rgba(37, 99, 235, 0.2);
+color: #3B82F6 !important;
+}
+.mob-nav-item.active-nav .active-dot {
+display: block !important;
+}
+/* SweetAlert2 Dark Theme Customization */
+.swal2-popup.swal2-dark-custom {
+background-color: #1F2937 !important;
+color: #F3F4F6 !important;
+border: 1px solid #374151 !important;
+border-radius: 1.5rem !important;
+font-family: 'Kanit', sans-serif !important;
+}
+.swal2-title {
+color: #FFFFFF !important;
+}
+.swal2-html-container {
+color: #9CA3AF !important;
 }

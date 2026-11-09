@@ -1,9 +1,8 @@
 /**
- * DEXIE INDEXEDDB DATABASE DEFINITION
+ * DATA STORAGE ENGINE
  */
 const db = new Dexie('NexusBankingDB');
 
-// Define Schema: transactions & settings & categories
 db.version(1).stores({
     transactions: 'id, type, title, category, date, amountSatang',
     categories: '++id, type, name',
@@ -33,7 +32,6 @@ let categoryChartInstance = null;
 let monthlyChartInstance = null;
 let dashboardTimeframe = 'month';
 
-// Default categories to seed if empty
 const defaultCategories = {
     income: ['เงินเดือน', 'งานเสริม', 'โบนัส', 'รายได้อื่น ๆ'],
     expense: ['อาหาร', 'เดินทาง', 'ช้อปปิ้ง', 'ค่าใช้จ่ายประจำ', 'บิลและค่าสาธารณูปโภค', 'สุขภาพ', 'ความบันเทิง', 'อื่น ๆ']
@@ -67,7 +65,47 @@ function initDateInputDefault() {
 }
 
 /**
- * PIN SECURITY SYSTEM (IndexedDB Settings Store + Web Crypto)
+ * SWEETALERT2 NOTIFICATION HELPERS
+ */
+function showToast(message, iconType = 'success') {
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        background: '#1F2937',
+        color: '#F3F4F6',
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+    });
+    Toast.fire({
+        icon: iconType,
+        title: message
+    });
+}
+
+async function showConfirmDialog(title, text, confirmButtonText = 'ยืนยัน') {
+    const result = await Swal.fire({
+        title: title,
+        text: text,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#2563EB',
+        cancelButtonColor: '#374151',
+        confirmButtonText: confirmButtonText,
+        cancelButtonText: 'ยกเลิก',
+        customClass: {
+            popup: 'swal2-dark-custom'
+        }
+    });
+    return result.isConfirmed;
+}
+
+/**
+ * PIN SECURITY SYSTEM
  */
 async function hashPin(pinText, saltHex = null) {
     const encoder = new TextEncoder();
@@ -131,7 +169,7 @@ async function checkPinState() {
     if (!pinHash) {
         pinSetupStep = 1;
         document.getElementById('pin-title').textContent = "ตั้งรหัส PIN 6 หลัก";
-        document.getElementById('pin-subtitle').textContent = "กำหนดรหัสผ่านเพื่อความปลอดภัยในการเข้าใช้งาน (IndexedDB)";
+        document.getElementById('pin-subtitle').textContent = "กำหนดรหัสผ่านเพื่อความปลอดภัยในการเข้าใช้งาน";
         btnForgot.classList.add('hidden');
         overlay.classList.remove('hidden');
     } else {
@@ -262,27 +300,21 @@ function handleGlobalKeyDown(e) {
     }
 }
 
-function handleForgotPin() {
-    showConfirmDialog(
-        "รีเซ็ตรหัส PIN?",
-        "การรีเซ็ต PIN จะอนุญาตให้คุณตั้ง PIN 6 หลักใหม่ โดยข้อมูลการเงินเดิมที่เก็บใน IndexedDB ยังคงปลอดภัย",
-        async () => {
-            await setPinData(null, null);
-            await checkPinState();
-            showToast("ล้างรหัส PIN เดิมแล้ว กรุณาตั้ง PIN ใหม่", "info");
-        }
-    );
+async function handleForgotPin() {
+    const confirmed = await showConfirmDialog("รีเซ็ตรหัส PIN?", "การรีเซ็ต PIN จะอนุญาตให้คุณตั้ง PIN 6 หลักใหม่ โดยข้อมูลการเงินเดิมยังคงปลอดภัย");
+    if (confirmed) {
+        await setPinData(null, null);
+        await checkPinState();
+        showToast("ล้างรหัส PIN เดิมแล้ว กรุณาตั้ง PIN ใหม่", "info");
+    }
 }
 
-function triggerChangePin() {
-    showConfirmDialog(
-        "เปลี่ยนรหัส PIN?",
-        "ระบบจะกลับสู่หน้าตั้งค่า PIN 6 หลักใหม่",
-        async () => {
-            await setPinData(null, null);
-            await checkPinState();
-        }
-    );
+async function triggerChangePin() {
+    const confirmed = await showConfirmDialog("เปลี่ยนรหัส PIN?", "ระบบจะกลับสู่หน้าตั้งค่า PIN 6 หลักใหม่");
+    if (confirmed) {
+        await setPinData(null, null);
+        await checkPinState();
+    }
 }
 
 /**
@@ -304,13 +336,18 @@ function switchTab(tabId) {
     }
 
     document.querySelectorAll('.mob-nav-item').forEach(btn => {
-        btn.classList.remove('text-bankingBlue');
+        btn.classList.remove('active-nav', 'text-bankingBlue', 'bg-bankingBlue/20');
         btn.classList.add('text-gray-400');
+        const dot = btn.querySelector('.active-dot');
+        if (dot) dot.classList.add('hidden');
     });
+    
     const activeMobNav = document.getElementById(`mob-nav-${tabId}`);
     if (activeMobNav) {
-        activeMobNav.classList.add('text-bankingBlue');
+        activeMobNav.classList.add('active-nav', 'text-bankingBlue', 'bg-bankingBlue/20');
         activeMobNav.classList.remove('text-gray-400');
+        const dot = activeMobNav.querySelector('.active-dot');
+        if (dot) dot.classList.remove('hidden');
     }
 
     renderApp();
@@ -325,7 +362,7 @@ async function renderApp() {
 }
 
 /**
- * DASHBOARD MODULE (IndexedDB Queries)
+ * DASHBOARD MODULE
  */
 async function renderDashboard() {
     const allTx = await db.transactions.toArray();
@@ -380,7 +417,7 @@ async function renderRecentTransactions() {
                 </div>
                 <div class="truncate">
                     <h4 class="text-xs font-semibold text-white truncate">${escapeHtml(t.title)}</h4>
-                    <p class="text-[10px] text-gray-400">${t.category} • ${formatThaiDate(t.date)}</p>
+                    <p class="text-[10px] text-gray-400">${escapeHtml(t.category)} • ${formatThaiDate(t.date)}</p>
                 </div>
             </div>
             <span class="text-xs font-bold ${colorClass} flex-shrink-0 ml-2">${sign}${Satang.formatTHB(t.amountSatang)}</span>
@@ -426,14 +463,14 @@ async function renderDashboardChart(allTx) {
             },
             scales: {
                 x: { ticks: { color: '#9CA3AF', font: { family: 'Kanit' } }, grid: { display: false } },
-                y: { ticks: { color: '#9CA3AF', font: { family: 'Kanit' } }, grid: { color: '#30363D' } }
+                y: { ticks: { color: '#9CA3AF', font: { family: 'Kanit' } }, grid: { color: '#374151' } }
             }
         }
     });
 }
 
 /**
- * TRANSACTIONS MANAGEMENT MODULE (CRUD using Dexie IndexedDB)
+ * TRANSACTIONS MANAGEMENT MODULE
  */
 function applyTransactionFilters() {
     renderTransactionsView();
@@ -532,11 +569,11 @@ function setTxModalType(type) {
     const btnIncome = document.getElementById('tx-type-btn-income');
 
     if (type === 'expense') {
-        btnExpense.className = 'py-2 text-sm font-medium rounded-lg transition text-white bg-expenseRed';
-        btnIncome.className = 'py-2 text-sm font-medium rounded-lg transition text-gray-400';
+        btnExpense.className = 'py-2.5 text-sm font-semibold rounded-xl transition text-white bg-expenseRed shadow-sm';
+        btnIncome.className = 'py-2.5 text-sm font-semibold rounded-xl transition text-gray-400';
     } else {
-        btnIncome.className = 'py-2 text-sm font-medium rounded-lg transition text-white bg-incomeGreen';
-        btnExpense.className = 'py-2 text-sm font-medium rounded-lg transition text-gray-400';
+        btnIncome.className = 'py-2.5 text-sm font-semibold rounded-xl transition text-white bg-incomeGreen shadow-sm';
+        btnExpense.className = 'py-2.5 text-sm font-semibold rounded-xl transition text-gray-400';
     }
     populateCategorySelects();
 }
@@ -604,26 +641,23 @@ async function saveTransaction(e) {
     };
 
     await db.transactions.put(txItem);
-    showToast(id ? "อัปเดตรายการเรียบร้อย" : "บันทึกรายการลง IndexedDB สำเร็จ", "success");
+    showToast(id ? "อัปเดตรายการเรียบร้อย" : "บันทึกรายการสำเร็จ", "success");
 
     closeTransactionModal();
     renderApp();
 }
 
-function confirmDeleteTransaction(id) {
-    showConfirmDialog(
-        "ลบรายการธุรกรรม?",
-        "คุณแน่ใจหรือว่าต้องการลบรายการนี้จาก IndexedDB",
-        async () => {
-            await db.transactions.delete(id);
-            renderApp();
-            showToast("ลบรายการสำเร็จ", "success");
-        }
-    );
+async function confirmDeleteTransaction(id) {
+    const confirmed = await showConfirmDialog("ลบรายการธุรกรรม?", "คุณแน่ใจหรือว่าต้องการลบรายการนี้");
+    if (confirmed) {
+        await db.transactions.delete(id);
+        renderApp();
+        showToast("ลบรายการสำเร็จ", "success");
+    }
 }
 
 /**
- * CATEGORIES MODULE (IndexedDB Operations)
+ * CATEGORIES MODULE
  */
 async function populateCategorySelects() {
     const currentType = document.getElementById('tx-type').value;
@@ -679,7 +713,7 @@ async function createCategoryBadge(catObj) {
             <span class="text-sm font-medium text-white">${escapeHtml(catObj.name)}</span>
             <span class="text-[10px] text-gray-400 block">${count} รายการ</span>
         </div>
-        <button onclick="deleteCategory(${catObj.id}, '${catObj.name}')" class="p-1.5 text-gray-500 hover:text-expenseRed transition">
+        <button onclick="deleteCategory(${catObj.id}, '${escapeHtml(catObj.name)}')" class="p-1.5 text-gray-500 hover:text-expenseRed transition">
             <i class="fa-solid fa-trash-can text-sm"></i>
         </button>
     `;
@@ -721,15 +755,12 @@ async function deleteCategory(id, catName) {
         return;
     }
 
-    showConfirmDialog(
-        "ยืนยันการลบหมวดหมู่?",
-        `คุณต้องการลบหมวดหมู่ "${catName}" หรือไม่?`,
-        async () => {
-            await db.categories.delete(id);
-            renderApp();
-            showToast("ลบหมวดหมู่เรียบร้อย", "success");
-        }
-    );
+    const confirmed = await showConfirmDialog("ยืนยันการลบหมวดหมู่?", `คุณต้องการลบหมวดหมู่ "${catName}" หรือไม่?`);
+    if (confirmed) {
+        await db.categories.delete(id);
+        renderApp();
+        showToast("ลบหมวดหมู่เรียบร้อย", "success");
+    }
 }
 
 /**
@@ -816,14 +847,14 @@ function renderMonthlyComparisonChart(allTx) {
             },
             scales: {
                 x: { ticks: { color: '#9CA3AF' }, grid: { display: false } },
-                y: { ticks: { color: '#9CA3AF' }, grid: { color: '#30363D' } }
+                y: { ticks: { color: '#9CA3AF' }, grid: { color: '#374151' } }
             }
         }
     });
 }
 
 /**
- * IMPORT / EXPORT & DATA BACKUP (IndexedDB Data Export)
+ * IMPORT / EXPORT & DATA BACKUP
  */
 async function exportDataJSON() {
     const transactions = await db.transactions.toArray();
@@ -833,7 +864,7 @@ async function exportDataJSON() {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `nexus_indexeddb_backup_${new Date().toISOString().split('T')[0]}.json`);
+    downloadAnchor.setAttribute("download", `nexus_backup_${new Date().toISOString().split('T')[0]}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -878,7 +909,7 @@ function handleImportFile(event) {
                 }
 
                 renderApp();
-                showToast("นำเข้าข้อมูลสู่ IndexedDB เรียบร้อยแล้ว", "success");
+                showToast("นำเข้าข้อมูลสำรองเรียบร้อยแล้ว", "success");
             } else {
                 showToast("รูปแบบไฟล์ JSON ไม่ถูกต้อง", "error");
             }
@@ -889,16 +920,13 @@ function handleImportFile(event) {
     reader.readAsText(file);
 }
 
-function confirmWipeAllData() {
-    showConfirmDialog(
-        "ล้างข้อมูลธุรกรรมทั้งหมด?",
-        "การดำเนินการนี้จะลบรายการรายรับ-รายจ่ายทั้งหมดออกจาก IndexedDB",
-        async () => {
-            await db.transactions.clear();
-            renderApp();
-            showToast("ล้างข้อมูลทางการเงินใน IndexedDB แล้ว", "info");
-        }
-    );
+async function confirmWipeAllData() {
+    const confirmed = await showConfirmDialog("ล้างข้อมูลธุรกรรมทั้งหมด?", "การดำเนินการนี้จะลบรายการรายรับ-รายจ่ายทั้งหมดออกจากระบบอย่างถาวร");
+    if (confirmed) {
+        await db.transactions.clear();
+        renderApp();
+        showToast("ล้างข้อมูลทางการเงินเรียบร้อยแล้ว", "info");
+    }
 }
 
 /**
@@ -957,52 +985,4 @@ function escapeHtml(str) {
     return String(str).replace(/[&<>"']/g, function(m) {
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
     });
-}
-
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-
-    let icon = 'fa-circle-info';
-    let borderClass = 'border-bankingBlue';
-    if (type === 'success') { icon = 'fa-circle-check'; borderClass = 'border-incomeGreen'; }
-    if (type === 'error') { icon = 'fa-circle-exclamation'; borderClass = 'border-expenseRed'; }
-
-    toast.className = `pointer-events-auto flex items-center space-x-3 px-4 py-3 rounded-xl bg-darkSurface text-white text-xs shadow-xl border-l-4 ${borderClass} transition-all transform translate-y-2 opacity-0`;
-    toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${escapeHtml(message)}</span>`;
-
-    container.appendChild(toast);
-
-    setTimeout(() => {
-        toast.classList.remove('translate-y-2', 'opacity-0');
-    }, 10);
-
-    setTimeout(() => {
-        toast.classList.add('opacity-0');
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
-function showConfirmDialog(title, message, onConfirm) {
-    document.getElementById('confirm-title').textContent = title;
-    document.getElementById('confirm-msg').textContent = message;
-
-    const modal = document.getElementById('modal-confirm');
-    const btnOk = document.getElementById('confirm-btn-ok');
-    const btnCancel = document.getElementById('confirm-btn-cancel');
-
-    modal.classList.remove('hidden');
-
-    const cleanup = () => {
-        modal.classList.add('hidden');
-        btnOk.onclick = null;
-        btnCancel.onclick = null;
-    };
-
-    btnOk.onclick = async () => {
-        cleanup();
-        await onConfirm();
-    };
-
-    btnCancel.onclick = cleanup;
 }

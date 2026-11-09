@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Digital Banking - Personal Finance Tracker</title>
+    <title>Nexus Digital Banking - Personal Finance Tracker</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -12,10 +12,10 @@
             theme: {
                 extend: {
                     colors: {
-                        darkBg: '#0D0F12',
-                        darkSurface: '#161B22',
-                        darkCard: '#1C2128',
-                        darkBorder: '#30363D',
+                        darkBg: '#090D16',
+                        darkSurface: '#111827',
+                        darkCard: '#1F2937',
+                        darkBorder: '#374151',
                         bankingBlue: {
                             DEFAULT: '#2563EB',
                             hover: '#1D4ED8',
@@ -39,12 +39,59 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Dexie.js (IndexedDB Wrapper) -->
+    <!-- Dexie.js (Data Engine) -->
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- External CSS -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-darkBg text-gray-100 min-h-screen flex flex-col antialiased selection:bg-bankingBlue selection:text-white">
+
+    <!-- SECURITY LOCK OVERLAY -->
+    <div id="pin-overlay" class="fixed inset-0 bg-darkBg/95 backdrop-blur-2xl z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-darkCard border border-darkBorder w-full max-w-md rounded-3xl p-8 shadow-2xl space-y-6 text-center animate-modalPop">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-bankingBlue to-blue-400 flex items-center justify-center text-white text-2xl mx-auto shadow-lg shadow-blue-500/30">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h2 id="pin-title" class="text-2xl font-bold text-white">Nexus Banking Lock</h2>
+                <p id="pin-subtitle" class="text-xs text-gray-400 mt-1">กรุณากรอกรหัส PIN 6 หลักเพื่อเข้าใช้งาน</p>
+            </div>
+
+            <!-- PIN Dots Indicator -->
+            <div id="pin-dots" class="flex items-center justify-center space-x-3 py-2">
+                <div class="w-4 h-4 rounded-full border-2 border-darkBorder bg-transparent transition-all"></div>
+                <div class="w-4 h-4 rounded-full border-2 border-darkBorder bg-transparent transition-all"></div>
+                <div class="w-4 h-4 rounded-full border-2 border-darkBorder bg-transparent transition-all"></div>
+                <div class="w-4 h-4 rounded-full border-2 border-darkBorder bg-transparent transition-all"></div>
+                <div class="w-4 h-4 rounded-full border-2 border-darkBorder bg-transparent transition-all"></div>
+                <div class="w-4 h-4 rounded-full border-2 border-darkBorder bg-transparent transition-all"></div>
+            </div>
+
+            <p id="pin-error-msg" class="text-xs font-medium text-expenseRed h-4"></p>
+
+            <!-- Numeric Keypad -->
+            <div class="grid grid-cols-3 gap-3 pt-2">
+                <button onclick="pressPinKey('1')" class="py-4 bg-darkSurface hover:bg-darkBorder rounded-2xl text-xl font-bold text-white transition active:scale-95 shadow-sm">1</button>
+                <button onclick="pressPinKey('2')" class="py-4 bg-darkSurface hover:bg-darkBorder rounded-2xl text-xl font-bold text-white transition active:scale-95 shadow-sm">2</button>
+                <button onclick="pressPinKey('3')" class="py-4 bg-darkSurface hover:bg-darkBorder rounded-2xl text-xl font-bold text-white transition active:scale-95 shadow-sm">3</button>
+                <button onclick="pressPinKey('4')" class="py-4 bg-darkSurface hover:bg-darkBorder rounded-2xl text-xl font-bold text-white transition active:scale-95 shadow-sm">4</button>
+                <button onclick="pressPinKey('5')" class="py-4 bg-darkSurface hover:bg-darkBorder rounded-2xl text-xl font-bold text-white transition active:scale-95 shadow-sm">5</button>
+                <button onclick="pressPinKey('6')" class="py-4 bg-darkSurface hover:bg-darkBorder rounded-2xl text-xl font-bold text-white transition active:scale-95 shadow-sm">6</button>
+                <button onclick="pressPinKey('7')" class="py-4 bg-darkSurface hover:bg-darkBorder rounded-2xl text-xl font-bold text-white transition active:scale-95 shadow-sm">7</button>
+                <button onclick="pressPinKey('8')" class="py-4 bg-darkSurface hover:bg-darkBorder rounded-2xl text-xl font-bold text-white transition active:scale-95 shadow-sm">8</button>
+                <button onclick="pressPinKey('9')" class="py-4 bg-darkSurface hover:bg-darkBorder rounded-2xl text-xl font-bold text-white transition active:scale-95 shadow-sm">9</button>
+                <button onclick="resetPinInput()" class="py-4 bg-darkSurface hover:bg-darkBorder rounded-2xl text-xs font-medium text-gray-400 transition active:scale-95">ล้าง</button>
+                <button onclick="pressPinKey('0')" class="py-4 bg-darkSurface hover:bg-darkBorder rounded-2xl text-xl font-bold text-white transition active:scale-95 shadow-sm">0</button>
+                <button onclick="backspacePinKey()" class="py-4 bg-darkSurface hover:bg-darkBorder rounded-2xl text-base text-gray-300 transition active:scale-95"><i class="fa-solid fa-delete-left"></i></button>
+            </div>
+
+            <div class="pt-2">
+                <button id="btn-forgot-pin" onclick="handleForgotPin()" class="text-xs text-bankingBlue hover:underline font-medium">ลืมรหัส PIN?</button>
+            </div>
+        </div>
+    </div>
 
     <!-- APP WRAPPER -->
     <div id="app" class="flex-1 flex flex-col md:flex-row max-w-[1600px] mx-auto w-full relative min-h-screen">
@@ -63,35 +110,35 @@
 
             <!-- Navigation Links -->
             <nav class="flex-1 px-3 py-4 space-y-1">
-                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition font-medium text-gray-300 hover:bg-darkCard hover:text-white">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium text-gray-300 hover:bg-darkCard hover:text-white">
                     <i class="fa-solid fa-chart-pie w-5 text-center text-lg"></i>
                     <span>แดชบอร์ด</span>
                 </button>
-                <button onclick="switchTab('transactions')" id="nav-transactions" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition font-medium text-gray-300 hover:bg-darkCard hover:text-white">
+                <button onclick="switchTab('transactions')" id="nav-transactions" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium text-gray-300 hover:bg-darkCard hover:text-white">
                     <i class="fa-solid fa-receipt w-5 text-center text-lg"></i>
                     <span>ประวัติรายการ</span>
                 </button>
-                <button onclick="switchTab('analytics')" id="nav-analytics" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition font-medium text-gray-300 hover:bg-darkCard hover:text-white">
+                <button onclick="switchTab('analytics')" id="nav-analytics" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium text-gray-300 hover:bg-darkCard hover:text-white">
                     <i class="fa-solid fa-chart-line w-5 text-center text-lg"></i>
                     <span>วิเคราะห์การเงิน</span>
                 </button>
-                <button onclick="switchTab('categories')" id="nav-categories" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition font-medium text-gray-300 hover:bg-darkCard hover:text-white">
+                <button onclick="switchTab('categories')" id="nav-categories" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium text-gray-300 hover:bg-darkCard hover:text-white">
                     <i class="fa-solid fa-tags w-5 text-center text-lg"></i>
                     <span>จัดหมวดหมู่</span>
                 </button>
-                <button onclick="switchTab('settings')" id="nav-settings" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition font-medium text-gray-300 hover:bg-darkCard hover:text-white">
+                <button onclick="switchTab('settings')" id="nav-settings" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium text-gray-300 hover:bg-darkCard hover:text-white">
                     <i class="fa-solid fa-sliders w-5 text-center text-lg"></i>
                     <span>ตั้งค่าระบบ</span>
                 </button>
             </nav>
 
             <!-- Quick Action Button -->
-            <div class="p-4 border-t border-darkBorder">
+            <div class="p-4 border-t border-darkBorder space-y-2">
                 <button onclick="openTransactionModal()" class="w-full bg-bankingBlue hover:bg-bankingBlue-hover text-white py-3 px-4 rounded-xl font-medium shadow-lg shadow-bankingBlue/25 transition flex items-center justify-center space-x-2">
                     <i class="fa-solid fa-plus"></i>
                     <span>บันทึกธุรกรรม</span>
                 </button>
-                <button onclick="lockApp()" class="w-full mt-2 bg-darkCard hover:bg-darkBorder text-gray-400 hover:text-gray-200 py-2.5 px-4 rounded-xl text-xs font-medium transition flex items-center justify-center space-x-2">
+                <button onclick="lockApp()" class="w-full bg-darkCard hover:bg-darkBorder text-gray-400 hover:text-gray-200 py-2.5 px-4 rounded-xl text-xs font-medium transition flex items-center justify-center space-x-2">
                     <i class="fa-solid fa-lock"></i>
                     <span>ล็อกหน้าจอ</span>
                 </button>
@@ -99,7 +146,7 @@
         </aside>
 
         <!-- MAIN CONTENT AREA -->
-        <main class="flex-1 flex flex-col min-w-0 pb-20 md:pb-6">
+        <main class="flex-1 flex flex-col min-w-0 pb-28 md:pb-6">
             <!-- Top Mobile Header -->
             <header class="md:hidden bg-darkSurface border-b border-darkBorder p-4 flex items-center justify-between sticky top-0 z-20">
                 <div class="flex items-center space-x-3">
@@ -123,9 +170,9 @@
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <h2 class="text-2xl md:text-3xl font-bold text-white tracking-tight">ภาพรวมการเงิน</h2>
-                            <p class="text-sm text-gray-400">ยินดีต้อนรับกลับ บันทึกและบริหารบัญชีส่วนบุคคล (IndexedDB-Powered)</p>
+                            <p class="text-sm text-gray-400">ยินดีต้อนรับกลับ บันทึกและบริหารบัญชีส่วนบุคคล</p>
                         </div>
-                        <button onclick="openTransactionModal()" class="hidden sm:flex bg-bankingBlue hover:bg-bankingBlue-hover text-white px-5 py-2.5 rounded-xl font-medium shadow-md transition items-center space-x-2">
+                        <button onclick="openTransactionModal()" class="hidden sm:flex bg-bankingBlue hover:bg-bankingBlue-hover text-white px-5 py-2.5 rounded-xl font-medium shadow-lg shadow-bankingBlue/20 transition-all duration-300 hover:scale-105 items-center space-x-2">
                             <i class="fa-solid fa-plus"></i>
                             <span>เพิ่มรายการ</span>
                         </button>
@@ -133,10 +180,10 @@
 
                     <!-- Summary Cards Grid -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="bg-darkCard border border-darkBorder p-5 rounded-2xl shadow-sm relative overflow-hidden group">
+                        <div class="bg-darkCard border border-darkBorder p-5 rounded-2xl shadow-sm relative overflow-hidden group hover:border-bankingBlue/40 transition-all duration-300 hover:-translate-y-1">
                             <div class="flex items-center justify-between">
                                 <span class="text-sm font-medium text-gray-400">ยอดเงินคงเหลือสุทธิ</span>
-                                <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-bankingBlue flex items-center justify-center">
+                                <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-bankingBlue flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
                                     <i class="fa-solid fa-wallet text-lg"></i>
                                 </div>
                             </div>
@@ -146,10 +193,10 @@
                             </div>
                         </div>
 
-                        <div class="bg-darkCard border border-darkBorder p-5 rounded-2xl shadow-sm relative overflow-hidden">
+                        <div class="bg-darkCard border border-darkBorder p-5 rounded-2xl shadow-sm relative overflow-hidden group hover:border-incomeGreen/40 transition-all duration-300 hover:-translate-y-1">
                             <div class="flex items-center justify-between">
                                 <span class="text-sm font-medium text-gray-400">รายรับรวม</span>
-                                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-incomeGreen flex items-center justify-center">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-incomeGreen flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
                                     <i class="fa-solid fa-arrow-down-left text-lg"></i>
                                 </div>
                             </div>
@@ -159,10 +206,10 @@
                             </div>
                         </div>
 
-                        <div class="bg-darkCard border border-darkBorder p-5 rounded-2xl shadow-sm relative overflow-hidden">
+                        <div class="bg-darkCard border border-darkBorder p-5 rounded-2xl shadow-sm relative overflow-hidden group hover:border-expenseRed/40 transition-all duration-300 hover:-translate-y-1">
                             <div class="flex items-center justify-between">
                                 <span class="text-sm font-medium text-gray-400">รายจ่ายรวม</span>
-                                <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-expenseRed flex items-center justify-center">
+                                <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-expenseRed flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
                                     <i class="fa-solid fa-arrow-up-right text-lg"></i>
                                 </div>
                             </div>
@@ -172,10 +219,10 @@
                             </div>
                         </div>
 
-                        <div class="bg-darkCard border border-darkBorder p-5 rounded-2xl shadow-sm relative overflow-hidden">
+                        <div class="bg-darkCard border border-darkBorder p-5 rounded-2xl shadow-sm relative overflow-hidden group hover:border-purple-500/40 transition-all duration-300 hover:-translate-y-1">
                             <div class="flex items-center justify-between">
                                 <span class="text-sm font-medium text-gray-400">อัตราการเก็บออม</span>
-                                <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
+                                <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
                                     <i class="fa-solid fa-piggy-bank text-lg"></i>
                                 </div>
                             </div>
@@ -379,7 +426,7 @@
                         <div class="bg-darkCard border border-darkBorder p-6 rounded-2xl space-y-5">
                             <div class="flex items-center space-x-3 pb-3 border-b border-darkBorder">
                                 <i class="fa-solid fa-database text-bankingBlue text-xl"></i>
-                                <h3 class="font-bold text-lg text-white">สำรองและคืนค่าข้อมูล (IndexedDB)</h3>
+                                <h3 class="font-bold text-lg text-white">สำรองและคืนค่าข้อมูล</h3>
                             </div>
 
                             <div class="space-y-2">
@@ -427,7 +474,7 @@
                                     <i class="fa-solid fa-triangle-exclamation"></i>
                                     <span>โซนอันตราย</span>
                                 </h4>
-                                <p class="text-xs text-gray-400">การล้างข้อมูลทางการเงินจะทำให้บันทึกทั้งหมดถูกลบออกจาก IndexedDB อย่างถาวร</p>
+                                <p class="text-xs text-gray-400">การล้างข้อมูลทางการเงินจะทำให้บันทึกทั้งหมดถูกลบออกจากระบบอย่างถาวร</p>
                                 <button onclick="confirmWipeAllData()" class="w-full px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-expenseRed border border-expenseRed/30 rounded-xl text-sm font-medium transition flex items-center justify-center space-x-2">
                                     <i class="fa-solid fa-trash-can"></i>
                                     <span>ล้างข้อมูลธุรกรรมทั้งหมด</span>
@@ -440,176 +487,113 @@
             </div>
         </main>
 
-        <!-- BOTTOM NAVIGATION (Mobile) -->
-        <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-darkSurface border-t border-darkBorder flex items-center justify-around py-2 px-1 z-30">
-            <button onclick="switchTab('dashboard')" id="mob-nav-dashboard" class="mob-nav-item flex flex-col items-center justify-center w-full py-1 text-bankingBlue">
-                <i class="fa-solid fa-chart-pie text-lg"></i>
-                <span class="text-[10px] mt-0.5">แดชบอร์ด</span>
-            </button>
-            <button onclick="switchTab('transactions')" id="mob-nav-transactions" class="mob-nav-item flex flex-col items-center justify-center w-full py-1 text-gray-400">
-                <i class="fa-solid fa-receipt text-lg"></i>
-                <span class="text-[10px] mt-0.5">รายการ</span>
-            </button>
-            <button onclick="openTransactionModal()" class="flex flex-col items-center justify-center w-12 h-12 rounded-full bg-bankingBlue text-white shadow-lg -mt-5 border-4 border-darkBg">
-                <i class="fa-solid fa-plus text-xl"></i>
-            </button>
-            <button onclick="switchTab('analytics')" id="mob-nav-analytics" class="mob-nav-item flex flex-col items-center justify-center w-full py-1 text-gray-400">
-                <i class="fa-solid fa-chart-line text-lg"></i>
-                <span class="text-[10px] mt-0.5">วิเคราะห์</span>
-            </button>
-            <button onclick="switchTab('settings')" id="mob-nav-settings" class="mob-nav-item flex flex-col items-center justify-center w-full py-1 text-gray-400">
-                <i class="fa-solid fa-sliders text-lg"></i>
-                <span class="text-[10px] mt-0.5">ตั้งค่า</span>
-            </button>
-        </nav>
-    </div>
-
-    <!-- PIN SECURITY OVERLAY -->
-    <div id="pin-overlay" class="fixed inset-0 bg-darkBg/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
-        <div class="bg-darkCard border border-darkBorder w-full max-w-sm rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col items-center text-center">
-            
-            <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-bankingBlue to-blue-400 flex items-center justify-center text-white text-2xl shadow-lg shadow-bankingBlue/20 mb-4">
-                <i class="fa-solid fa-shield-halved"></i>
-            </div>
-
-            <h3 id="pin-title" class="text-xl font-bold text-white">รักษาความปลอดภัย</h3>
-            <p id="pin-subtitle" class="text-xs text-gray-400 mt-1 mb-6">กรุณากรอก PIN 6 หลักเพื่อเข้าใช้งาน</p>
-
-            <div id="pin-dots" class="flex items-center justify-center space-x-3 mb-6">
-                <div class="w-4 h-4 rounded-full border-2 border-darkBorder"></div>
-                <div class="w-4 h-4 rounded-full border-2 border-darkBorder"></div>
-                <div class="w-4 h-4 rounded-full border-2 border-darkBorder"></div>
-                <div class="w-4 h-4 rounded-full border-2 border-darkBorder"></div>
-                <div class="w-4 h-4 rounded-full border-2 border-darkBorder"></div>
-                <div class="w-4 h-4 rounded-full border-2 border-darkBorder"></div>
-            </div>
-
-            <p id="pin-error-msg" class="text-xs text-expenseRed font-medium min-h-[20px] mb-4"></p>
-
-            <div id="pin-keypad" class="grid grid-cols-3 gap-3 w-full max-w-[260px] mb-4">
-                <button onclick="pressPinKey('1')" class="h-14 rounded-2xl bg-darkSurface hover:bg-darkBorder border border-darkBorder text-white text-xl font-semibold transition active:scale-95">1</button>
-                <button onclick="pressPinKey('2')" class="h-14 rounded-2xl bg-darkSurface hover:bg-darkBorder border border-darkBorder text-white text-xl font-semibold transition active:scale-95">2</button>
-                <button onclick="pressPinKey('3')" class="h-14 rounded-2xl bg-darkSurface hover:bg-darkBorder border border-darkBorder text-white text-xl font-semibold transition active:scale-95">3</button>
-                <button onclick="pressPinKey('4')" class="h-14 rounded-2xl bg-darkSurface hover:bg-darkBorder border border-darkBorder text-white text-xl font-semibold transition active:scale-95">4</button>
-                <button onclick="pressPinKey('5')" class="h-14 rounded-2xl bg-darkSurface hover:bg-darkBorder border border-darkBorder text-white text-xl font-semibold transition active:scale-95">5</button>
-                <button onclick="pressPinKey('6')" class="h-14 rounded-2xl bg-darkSurface hover:bg-darkBorder border border-darkBorder text-white text-xl font-semibold transition active:scale-95">6</button>
-                <button onclick="pressPinKey('7')" class="h-14 rounded-2xl bg-darkSurface hover:bg-darkBorder border border-darkBorder text-white text-xl font-semibold transition active:scale-95">7</button>
-                <button onclick="pressPinKey('8')" class="h-14 rounded-2xl bg-darkSurface hover:bg-darkBorder border border-darkBorder text-white text-xl font-semibold transition active:scale-95">8</button>
-                <button onclick="pressPinKey('9')" class="h-14 rounded-2xl bg-darkSurface hover:bg-darkBorder border border-darkBorder text-white text-xl font-semibold transition active:scale-95">9</button>
-                <button onclick="resetPinInput()" class="h-14 rounded-2xl bg-darkSurface hover:bg-darkBorder text-gray-400 text-xs font-medium transition active:scale-95 flex items-center justify-center">ล้าง</button>
-                <button onclick="pressPinKey('0')" class="h-14 rounded-2xl bg-darkSurface hover:bg-darkBorder border border-darkBorder text-white text-xl font-semibold transition active:scale-95">0</button>
-                <button onclick="backspacePinKey()" class="h-14 rounded-2xl bg-darkSurface hover:bg-darkBorder text-gray-400 text-lg transition active:scale-95 flex items-center justify-center">
-                    <i class="fa-solid fa-delete-left"></i>
+        <!-- FLOATING BOTTOM TAB BAR (Mobile Only - Pure Icons with Glow & Active Indicator) -->
+        <div class="md:hidden fixed bottom-5 left-4 right-4 z-30">
+            <nav class="floating-nav-bar bg-darkSurface/90 backdrop-blur-2xl border border-darkBorder/80 rounded-2xl shadow-2xl flex items-center justify-around py-3 px-3">
+                <button onclick="switchTab('dashboard')" id="mob-nav-dashboard" class="mob-nav-item flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 text-bankingBlue bg-bankingBlue/15 relative shadow-sm">
+                    <i class="fa-solid fa-chart-pie text-lg"></i>
+                    <span class="active-dot absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-bankingBlue shadow-glow"></span>
                 </button>
-            </div>
-
-            <button id="btn-forgot-pin" onclick="handleForgotPin()" class="text-xs text-gray-400 hover:text-white transition underline">
-                ลืม PIN / รีเซ็ตรหัสผ่าน
-            </button>
+                <button onclick="switchTab('transactions')" id="mob-nav-transactions" class="mob-nav-item flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 text-gray-400 relative hover:text-white">
+                    <i class="fa-solid fa-receipt text-lg"></i>
+                    <span class="active-dot hidden absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-bankingBlue shadow-glow"></span>
+                </button>
+                <button onclick="openTransactionModal()" class="flex flex-col items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-bankingBlue to-blue-400 text-white shadow-lg shadow-bankingBlue/50 transition-all duration-300 active:scale-90 hover:scale-110">
+                    <i class="fa-solid fa-plus text-lg"></i>
+                </button>
+                <button onclick="switchTab('analytics')" id="mob-nav-analytics" class="mob-nav-item flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 text-gray-400 relative hover:text-white">
+                    <i class="fa-solid fa-chart-line text-lg"></i>
+                    <span class="active-dot hidden absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-bankingBlue shadow-glow"></span>
+                </button>
+                <button onclick="switchTab('settings')" id="mob-nav-settings" class="mob-nav-item flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 text-gray-400 relative hover:text-white">
+                    <i class="fa-solid fa-sliders text-lg"></i>
+                    <span class="active-dot hidden absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-bankingBlue shadow-glow"></span>
+                </button>
+            </nav>
         </div>
     </div>
 
     <!-- TRANSACTION MODAL -->
-    <div id="modal-tx" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
-        <div class="bg-darkCard border border-darkBorder w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+    <div id="modal-tx" class="fixed inset-0 bg-black/75 backdrop-blur-md z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-darkCard border border-darkBorder w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh] animate-modalPop">
             <div class="p-5 border-b border-darkBorder flex items-center justify-between">
                 <h3 id="modal-tx-title" class="font-bold text-lg text-white">เพิ่มรายการธุรกรรม</h3>
-                <button onclick="closeTransactionModal()" class="text-gray-400 hover:text-white p-1">
-                    <i class="fa-solid fa-xmark text-xl"></i>
+                <button onclick="closeTransactionModal()" class="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-darkSurface transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
 
-            <form id="form-tx" onsubmit="saveTransaction(event)" class="p-5 space-y-4 overflow-y-auto flex-1">
+            <form id="form-tx" onsubmit="saveTransaction(event)" class="p-6 space-y-4 overflow-y-auto flex-1">
                 <input type="hidden" id="tx-id">
 
-                <div class="grid grid-cols-2 gap-2 p-1 bg-darkSurface rounded-xl border border-darkBorder">
-                    <button type="button" onclick="setTxModalType('expense')" id="tx-type-btn-expense" class="py-2 text-sm font-medium rounded-lg transition text-white bg-expenseRed">รายจ่าย (-)</button>
-                    <button type="button" onclick="setTxModalType('income')" id="tx-type-btn-income" class="py-2 text-sm font-medium rounded-lg transition text-gray-400">รายรับ (+)</button>
+                <div class="grid grid-cols-2 gap-2 p-1.5 bg-darkSurface rounded-2xl border border-darkBorder">
+                    <button type="button" onclick="setTxModalType('expense')" id="tx-type-btn-expense" class="py-2.5 text-sm font-semibold rounded-xl transition text-white bg-expenseRed shadow-sm">รายจ่าย (-)</button>
+                    <button type="button" onclick="setTxModalType('income')" id="tx-type-btn-income" class="py-2.5 text-sm font-semibold rounded-xl transition text-gray-400">รายรับ (+)</button>
                 </div>
                 <input type="hidden" id="tx-type" value="expense">
 
                 <div>
                     <label class="block text-xs font-medium text-gray-300 mb-1">ชื่อรายการ *</label>
-                    <input type="text" id="tx-title" required placeholder="เช่น ค่าอาหารกลางวัน, เงินเดือน" class="w-full px-3 py-2.5 bg-darkSurface border border-darkBorder rounded-xl text-sm text-white focus:outline-none focus:border-bankingBlue">
+                    <input type="text" id="tx-title" required placeholder="เช่น ค่าอาหารกลางวัน, เงินเดือน" class="w-full px-4 py-3 bg-darkSurface border border-darkBorder rounded-2xl text-sm text-white focus:outline-none focus:border-bankingBlue transition">
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-medium text-gray-300 mb-1">จำนวนเงิน (บาท) *</label>
-                        <input type="number" step="0.01" min="0.01" id="tx-amount" required placeholder="0.00" class="w-full px-3 py-2.5 bg-darkSurface border border-darkBorder rounded-xl text-sm text-white focus:outline-none focus:border-bankingBlue">
+                        <input type="number" step="0.01" min="0.01" id="tx-amount" required placeholder="0.00" class="w-full px-4 py-3 bg-darkSurface border border-darkBorder rounded-2xl text-sm text-white focus:outline-none focus:border-bankingBlue transition">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-300 mb-1">วันที่ *</label>
-                        <input type="date" id="tx-date" required class="w-full px-3 py-2.5 bg-darkSurface border border-darkBorder rounded-xl text-sm text-white focus:outline-none focus:border-bankingBlue">
+                        <input type="date" id="tx-date" required class="w-full px-4 py-3 bg-darkSurface border border-darkBorder rounded-2xl text-sm text-white focus:outline-none focus:border-bankingBlue transition">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-xs font-medium text-gray-300 mb-1">หมวดหมู่ *</label>
-                    <select id="tx-category" required class="w-full px-3 py-2.5 bg-darkSurface border border-darkBorder rounded-xl text-sm text-white focus:outline-none focus:border-bankingBlue"></select>
+                    <select id="tx-category" required class="w-full px-4 py-3 bg-darkSurface border border-darkBorder rounded-2xl text-sm text-white focus:outline-none focus:border-bankingBlue transition"></select>
                 </div>
 
                 <div>
                     <label class="block text-xs font-medium text-gray-300 mb-1">หมายเหตุ (ถ้ามี)</label>
-                    <textarea id="tx-note" rows="2" placeholder="รายละเอียดเพิ่มเติม..." class="w-full px-3 py-2.5 bg-darkSurface border border-darkBorder rounded-xl text-sm text-white focus:outline-none focus:border-bankingBlue"></textarea>
+                    <textarea id="tx-note" rows="2" placeholder="รายละเอียดเพิ่มเติม..." class="w-full px-4 py-3 bg-darkSurface border border-darkBorder rounded-2xl text-sm text-white focus:outline-none focus:border-bankingBlue transition"></textarea>
                 </div>
 
-                <div class="pt-3 border-t border-darkBorder flex items-center justify-end space-x-3">
-                    <button type="button" onclick="closeTransactionModal()" class="px-4 py-2 bg-darkSurface border border-darkBorder hover:bg-darkBorder rounded-xl text-sm font-medium text-gray-300 transition">ยกเลิก</button>
-                    <button type="submit" class="px-5 py-2 bg-bankingBlue hover:bg-bankingBlue-hover text-white rounded-xl text-sm font-medium shadow-md transition">บันทึกข้อมูล</button>
+                <div class="pt-4 border-t border-darkBorder flex items-center justify-end space-x-3">
+                    <button type="button" onclick="closeTransactionModal()" class="px-5 py-2.5 bg-darkSurface border border-darkBorder hover:bg-darkBorder rounded-xl text-sm font-medium text-gray-300 transition">ยกเลิก</button>
+                    <button type="submit" class="px-6 py-2.5 bg-bankingBlue hover:bg-bankingBlue-hover text-white rounded-xl text-sm font-medium shadow-lg shadow-bankingBlue/30 transition">บันทึกข้อมูล</button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- CATEGORY MODAL -->
-    <div id="modal-cat" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
-        <div class="bg-darkCard border border-darkBorder w-full max-w-md rounded-2xl overflow-hidden shadow-2xl">
+    <div id="modal-cat" class="fixed inset-0 bg-black/75 backdrop-blur-md z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-darkCard border border-darkBorder w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-modalPop">
             <div class="p-5 border-b border-darkBorder flex items-center justify-between">
                 <h3 id="modal-cat-title" class="font-bold text-lg text-white">เพิ่มหมวดหมู่</h3>
-                <button onclick="closeCategoryModal()" class="text-gray-400 hover:text-white p-1">
-                    <i class="fa-solid fa-xmark text-xl"></i>
+                <button onclick="closeCategoryModal()" class="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-darkSurface transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <form id="form-cat" onsubmit="saveCategory(event)" class="p-5 space-y-4">
+            <form id="form-cat" onsubmit="saveCategory(event)" class="p-6 space-y-4">
                 <div>
                     <label class="block text-xs font-medium text-gray-300 mb-1">ประเภทหมวดหมู่</label>
-                    <select id="cat-type" class="w-full px-3 py-2.5 bg-darkSurface border border-darkBorder rounded-xl text-sm text-white focus:outline-none focus:border-bankingBlue">
+                    <select id="cat-type" class="w-full px-4 py-3 bg-darkSurface border border-darkBorder rounded-2xl text-sm text-white focus:outline-none focus:border-bankingBlue transition">
                         <option value="expense">รายจ่าย</option>
                         <option value="income">รายรับ</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-300 mb-1">ชื่อหมวดหมู่ *</label>
-                    <input type="text" id="cat-name" required placeholder="เช่น ค่าท่องเที่ยว, ค่าสัตวแพทย์" class="w-full px-3 py-2.5 bg-darkSurface border border-darkBorder rounded-xl text-sm text-white focus:outline-none focus:border-bankingBlue">
+                    <input type="text" id="cat-name" required placeholder="เช่น ค่าท่องเที่ยว, ค่าสัตวแพทย์" class="w-full px-4 py-3 bg-darkSurface border border-darkBorder rounded-2xl text-sm text-white focus:outline-none focus:border-bankingBlue transition">
                 </div>
-                <div class="pt-3 border-t border-darkBorder flex items-center justify-end space-x-3">
-                    <button type="button" onclick="closeCategoryModal()" class="px-4 py-2 bg-darkSurface border border-darkBorder hover:bg-darkBorder rounded-xl text-sm font-medium text-gray-300 transition">ยกเลิก</button>
-                    <button type="submit" class="px-5 py-2 bg-bankingBlue hover:bg-bankingBlue-hover text-white rounded-xl text-sm font-medium shadow-md transition">บันทึก</button>
+                <div class="pt-4 border-t border-darkBorder flex items-center justify-end space-x-3">
+                    <button type="button" onclick="closeCategoryModal()" class="px-5 py-2.5 bg-darkSurface border border-darkBorder hover:bg-darkBorder rounded-xl text-sm font-medium text-gray-300 transition">ยกเลิก</button>
+                    <button type="submit" class="px-6 py-2.5 bg-bankingBlue hover:bg-bankingBlue-hover text-white rounded-xl text-sm font-medium shadow-lg shadow-bankingBlue/30 transition">บันทึก</button>
                 </div>
             </form>
         </div>
     </div>
-
-    <!-- CONFIRMATION DIALOG MODAL -->
-    <div id="modal-confirm" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-darkCard border border-darkBorder w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl p-6 text-center space-y-4">
-            <div class="w-12 h-12 rounded-full bg-rose-500/10 text-expenseRed flex items-center justify-center mx-auto text-xl">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-            </div>
-            <div>
-                <h3 id="confirm-title" class="font-bold text-lg text-white">ยืนยันการทำรายการ</h3>
-                <p id="confirm-msg" class="text-xs text-gray-400 mt-1">คุณแน่ใจหรือไม่ว่าต้องการดำเนินการต่อไป?</p>
-            </div>
-            <div class="flex items-center justify-center space-x-3 pt-2">
-                <button id="confirm-btn-cancel" class="w-1/2 py-2 bg-darkSurface border border-darkBorder hover:bg-darkBorder rounded-xl text-sm font-medium text-gray-300 transition">ยกเลิก</button>
-                <button id="confirm-btn-ok" class="w-1/2 py-2 bg-expenseRed hover:bg-rose-600 text-white rounded-xl text-sm font-medium shadow-md transition">ยืนยัน</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- TOAST CONTAINER -->
-    <div id="toast-container" class="fixed top-5 right-5 z-50 space-y-2 pointer-events-none"></div>
 
     <!-- External JavaScript Application Code -->
     <script src="app.js"></script>
