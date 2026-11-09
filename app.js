@@ -867,14 +867,15 @@ async function exportDataJSON() {
     dlAnchor.click();
     dlAnchor.remove();
 
-    Swal.fire({ icon: 'success', title: 'ส่งออก JSON สำเร็จ', timer: 1200, showConfirmButton: false, background: '#131b2e', color: '#f8fafc' });
+    Swal.fire({ icon: 'success', title: 'ส่งออก JSON สำเร็จ', timer: 1200, showConfirmButton: false, background: '#1F2937', color: '#F3F4F6' });
 }
 
 async function exportDataCSV() {
-    const txs = await getAllTransactions();
-    let csvContent = "\uFEFFID,Date,Type,Category,Title,Amount,Note\n";
+    const txs = await db.transactions.toArray();
+    let csvContent = "\uFEFFID,Date,Type,Category,Title,Amount_THB,Note\n";
     txs.forEach(t => {
-        csvContent += `"${t.id}","${t.date}","${t.type}","${t.category}","${t.title.replace(/"/g, '""')}","${t.amount}","${(t.note || '').replace(/"/g, '""')}"\n`;
+        const amtStr = Satang.toFloat(t.amountSatang).toFixed(2);
+        csvContent += `"${t.id}","${t.date}","${t.type}","${t.category}","${t.title.replace(/"/g, '""')}","${amtStr}","${(t.note || '').replace(/"/g, '""')}"\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -886,74 +887,84 @@ async function exportDataCSV() {
     dlAnchor.click();
     dlAnchor.remove();
 
-    Swal.fire({ icon: 'success', title: 'ส่งออก CSV สำเร็จ', timer: 1200, showConfirmButton: false, background: '#131b2e', color: '#f8fafc' });
+    Swal.fire({ icon: 'success', title: 'ส่งออก CSV สำเร็จ', timer: 1200, showConfirmButton: false, background: '#1F2937', color: '#F3F4F6' });
 }
 
-async function importDataJSON(e) {
-    const file = e.target.files[0];
+async function handleImportFile(event) {
+    const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async (event) => {
+    reader.onload = async (e) => {
         try {
-            const rawData = JSON.parse(event.target.result);
+            const rawData = JSON.parse(e.target.result);
             
-            // รองรับทั้งไฟล์แบบมีคีย์ transactions หรือเป็น Array ตรงๆ
+            // Support both object wrapper { transactions: [...] } and raw array [...]
             const txs = Array.isArray(rawData) ? rawData : (rawData.transactions || []);
             const cats = Array.isArray(rawData.categories) ? rawData.categories : null;
 
-            if (txs.length > 0 || (cats && cats.length > 0)) {
-                await db.transaction('rw', db.transactions, db.categories, async () => {
-                    if (txs.length > 0) {
-                        await db.transactions.clear();
-                        // จัดรูปแบบข้อมูลให้สะอาด ป้องกันปัญหา ID ชนกัน
-                        const cleanTxs = txs.map(t => ({
-                            type: t.type || 'expense',
-                            title: t.title || 'ไม่ระบุชื่อ',
-                            amount: Number(t.amount) || 0,
-                            category: t.category || 'อื่น ๆ',
-                            date: t.date || new Date().toISOString().split('T')[0],
-                            note: t.note || ''
-                        }));
-                        await db.transactions.bulkAdd(cleanTxs);
-                    }
-                    if (cats && cats.length > 0) {
-                        await db.categories.clear();
-                        const cleanCats = cats.map(c => ({
-                            name: c.name,
-                            type: c.type || 'expense'
-                        }));
-                        await db.categories.bulkAdd(cleanCats);
-                    }
-                });
-
-                Swal.fire({ 
-                    icon: 'success', 
-                    title: 'นำเข้าข้อมูลสำเร็จ', 
-                    text: `โหลดข้อมูลธุรกรรม ${txs.length} รายการเรียบร้อย`, 
-                    background: '#131b2e', 
-                    color: '#f8fafc' 
-                });
-                loadDashboardData();
-                if (document.getElementById('transactions-view').classList.contains('active')) {
-                    filterTransactions();
-                }
-            } else {
+            if (txs.length === 0 && (!cats || cats.length === 0)) {
                 throw new Error('ไม่พบข้อมูลธุรกรรมในไฟล์');
             }
+
+            await db.transaction('rw', db.transactions, db.categories, async () => {
+                if (txs.length > 0) {
+                    await db.transactions.clear();
+                    
+                    const cleanTxs = txs.map((t, idx) => {
+                        // Calculate amountSatang correctly from either amountSatang or amount float
+                        let satangVal = 0;
+                        if (typeof t.amountSatang !== 'undefined') {
+                            satangVal = parseInt(t.amountSatang) || 0;
+                        } else if (typeof t.amount !== 'undefined') {
+                            satangVal = Satang.fromFloat(t.amount);
+                        }
+
+                        return {
+                            id: t.id ? String(t.id) : ('TX_IMP_' + Date.now() + '_' + idx),
+                            type: t.type === 'income' ? 'income' : 'expense',
+                            title: String(t.title || 'ไม่ระบุชื่อ'),
+                            amountSatang: satangVal,
+                            category: String(t.category || 'อื่น ๆ'),
+                            date: t.date || new Date().toISOString().split('T')[0],
+                            note: t.note ? String(t.note) : ''
+                        };
+                    });
+
+                    await db.transactions.bulkPut(cleanTxs);
+                }
+
+                if (cats && cats.length > 0) {
+                    await db.categories.clear();
+                    for (const c of cats) {
+                        if (c.name && c.type) {
+                            await db.categories.add({ type: c.type, name: c.name });
+                        }
+                    }
+                }
+            });
+
+            await renderApp();
+            Swal.fire({ 
+                icon: 'success', 
+                title: 'นำเข้าข้อมูลสำเร็จ', 
+                text: `โหลดข้อมูลธุรกรรม ${txs.length} รายการเรียบร้อย`, 
+                background: '#1F2937', 
+                color: '#F3F4F6' 
+            });
         } catch (err) {
             console.error('Import error:', err);
             Swal.fire({ 
                 icon: 'error', 
                 title: 'นำเข้าข้อมูลไม่สำเร็จ', 
                 text: 'รูปแบบไฟล์ JSON ไม่ถูกต้องหรือเสียหาย', 
-                background: '#131b2e', 
-                color: '#f8fafc' 
+                background: '#1F2937', 
+                color: '#F3F4F6' 
             });
         }
     };
     reader.readAsText(file);
-    e.target.value = ''; // เคลียร์ค่า input เพื่อให้สามารถเลือกไฟล์เดิมซ้ำได้
+    event.target.value = ''; // Reset file input so user can import the same file again if needed
 }
 
 /**
