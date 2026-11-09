@@ -3,6 +3,12 @@
  * Handles PBKDF2 hashing, PIN verification, lock screen, & security settings.
  */
 
+let pinInputBuffer = '';
+let pinSetupStep = 1;
+let pinTempFirst = '';
+let pinFailedAttempts = 0;
+let lockUntilTimestamp = 0;
+
 async function hashPin(pinText, saltHex = null) {
     const encoder = new TextEncoder();
     const pinData = encoder.encode(pinText);
@@ -60,6 +66,8 @@ async function setPinData(pinHash, pinSalt) {
 async function checkPinState() {
     const overlay = document.getElementById('pin-overlay');
     const btnForgot = document.getElementById('btn-forgot-pin');
+    if (!overlay) return;
+
     const { pinHash } = await getPinData();
 
     if (!pinHash) {
@@ -68,7 +76,7 @@ async function checkPinState() {
     } else {
         document.getElementById('pin-title').textContent = "P5 Devices Lock";
         document.getElementById('pin-subtitle').textContent = "กรุณากรอก PIN 6 หลักเพื่อเข้าใช้งาน";
-        btnForgot.classList.remove('hidden');
+        if (btnForgot) btnForgot.classList.remove('hidden');
         overlay.classList.remove('hidden');
     }
     resetPinInput();
@@ -81,6 +89,7 @@ function lockApp() {
 
 function updatePinDots() {
     const container = document.getElementById('pin-dots');
+    if (!container) return;
     const dots = container.querySelectorAll('div');
     for (let i = 0; i < 6; i++) {
         if (i < pinInputBuffer.length) {
@@ -120,7 +129,8 @@ function backspacePinKey() {
 function resetPinInput() {
     pinInputBuffer = '';
     updatePinDots();
-    document.getElementById('pin-error-msg').textContent = '';
+    const errEl = document.getElementById('pin-error-msg');
+    if (errEl) errEl.textContent = '';
 }
 
 async function processPinSubmission() {
@@ -144,7 +154,7 @@ async function processPinSubmission() {
                 renderApp();
             } else {
                 triggerPinErrorAnimation();
-                errEl.textContent = "รหัส PIN ไม่ตรงกัน กรุณาตั้งใหม่";
+                if (errEl) errEl.textContent = "รหัส PIN ไม่ตรงกัน กรุณาตั้งใหม่";
                 pinSetupStep = 1;
                 pinInputBuffer = '';
                 document.getElementById('pin-title').textContent = "ตั้งรหัส PIN 6 หลัก";
@@ -167,22 +177,23 @@ async function processPinSubmission() {
         updatePinDots();
         if (pinFailedAttempts >= 5) {
             lockUntilTimestamp = Date.now() + 30000;
-            errEl.textContent = "กรอกผิดเกิน 5 ครั้ง ล็อกเป็นเวลา 30 วินาที";
+            if (errEl) errEl.textContent = "กรอกผิดเกิน 5 ครั้ง ล็อกเป็นเวลา 30 วินาที";
         } else {
-            errEl.textContent = `รหัส PIN ไม่ถูกต้อง (เหลือ ${5 - pinFailedAttempts} ครั้ง)`;
+            if (errEl) errEl.textContent = `รหัส PIN ไม่ถูกต้อง (เหลือ ${5 - pinFailedAttempts} ครั้ง)`;
         }
     }
 }
 
 function triggerPinErrorAnimation() {
     const dots = document.getElementById('pin-dots');
+    if (!dots) return;
     dots.classList.add('shake-animation');
     setTimeout(() => dots.classList.remove('shake-animation'), 400);
 }
 
 function handleGlobalKeyDown(e) {
     const overlay = document.getElementById('pin-overlay');
-    if (!overlay.classList.contains('hidden')) {
+    if (overlay && !overlay.classList.contains('hidden')) {
         if (e.key >= '0' && e.key <= '9') {
             pressPinKey(e.key);
         } else if (e.key === 'Backspace') {
@@ -207,7 +218,8 @@ async function triggerChangePin() {
     pinInputBuffer = '';
     document.getElementById('pin-title').textContent = "ตั้งรหัส PIN 6 หลักใหม่";
     document.getElementById('pin-subtitle').textContent = "กำหนดรหัสผ่านใหม่เพื่อความปลอดภัยในการเข้าใช้งาน";
-    document.getElementById('btn-forgot-pin').classList.add('hidden');
+    const btnForgot = document.getElementById('btn-forgot-pin');
+    if (btnForgot) btnForgot.classList.add('hidden');
     document.getElementById('pin-overlay').classList.remove('hidden');
     resetPinInput();
 }
