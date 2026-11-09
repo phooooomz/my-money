@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus Digital Banking - Personal Finance Tracker</title>
+    <title>P5 Digital Devices - Personal Finance Tracker</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -36,7 +36,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="<https></https>://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Dexie.js (Data Engine) -->
@@ -57,7 +57,7 @@
                 <i class="fa-solid fa-shield-halved"></i>
             </div>
             <div>
-                <h2 id="pin-title" class="text-2xl font-bold text-white">Nexus Banking Lock</h2>
+                <h2 id="pin-title" class="text-2xl font-bold text-white">P5 Devices Lock</h2>
                 <p id="pin-subtitle" class="text-xs text-gray-400 mt-1">กรุณากรอกรหัส PIN 6 หลักเพื่อเข้าใช้งาน</p>
             </div>
 
@@ -105,7 +105,7 @@
                     <i class="fa-solid font-bold fa-building-columns"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg leading-tight tracking-wide text-white">NEXUS BANK</h1>
+                    <h1 class="font-bold text-lg leading-tight tracking-wide text-white">P5 Devices</h1>
                     <p class="text-xs text-gray-400">Personal Finance</p>
                 </div>
             </div>
@@ -155,7 +155,7 @@
                     <div class="w-9 h-9 rounded-lg bg-bankingBlue flex items-center justify-center text-white font-bold">
                         <i class="fa-solid fa-building-columns"></i>
                     </div>
-                    <span class="font-bold text-lg text-white">NEXUS BANK</span>
+                    <span class="font-bold text-lg text-white">P5 Devices</span>
                 </div>
                 <div class="flex items-center space-x-2">
                     <button onclick="lockApp()" class="p-2 rounded-lg bg-darkCard border border-darkBorder text-gray-400 hover:text-white">
@@ -506,14 +506,14 @@
 
     <!-- HIDDEN PDF STATEMENT TEMPLATE -->
     <div class="fixed top-[-9999px] left-[-9999px]">
-        <div id="pdf-statement-template" class="w-[800px] p-8 bg-white text-gray-800 font-sans leading-relaxed">
+        <div id="pdf-statement-template" class="w-[850px] p-10 bg-white text-slate-800 font-sans leading-relaxed shadow-lg">
             <!-- Statement Header -->
-            <div class="flex justify-between items-center border-b-2 border-blue-600 pb-4 mb-6">
+            <div class="flex justify-between items-center border-b-2 border-blue-600 pb-5 mb-6">
                 <div>
-                    <h1 class="text-2xl font-bold text-blue-800 tracking-wider">NEXUS DIGITAL BANK</h1>
-                    <p class="text-xs text-gray-500">PERSONAL FINANCIAL STATEMENT / รายงานสรุปรายการทางการเงิน</p>
+                    <h1 class="text-2xl font-bold text-blue-900 tracking-wider">P5 DIGITAL DEVICES</h1>
+                    <p class="text-xs text-slate-500 font-medium">PERSONAL FINANCIAL STATEMENT / รายงานสรุปรายการทางการเงิน</p>
                 </div>
-                <div class="text-right text-xs text-gray-600 space-y-0.5">
+                <div class="text-right text-xs text-slate-600 space-y-1">
                     <p><span class="font-semibold">วันที่ออกเอกสาร:</span> <span id="pdf-date">-</span></p>
                     <p><span class="font-semibold">ประเภทบัญชี:</span> Personal Finance Tracker</p>
                     <p><span class="font-semibold">สกุลเงิน:</span> THB (บาท)</p>
@@ -521,51 +521,51 @@
             </div>
 
             <!-- Financial Summary Box -->
-            <div class="grid grid-cols-3 gap-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <div class="grid grid-cols-3 gap-4 mb-6 bg-slate-50 p-5 rounded-2xl border border-slate-200">
                 <div class="text-center border-r border-slate-200 pr-2">
-                    <span class="text-xs text-gray-500 font-medium">ยอดเงินคงเหลือสุทธิ</span>
+                    <span class="text-xs text-slate-500 font-medium">ยอดเงินคงเหลือสุทธิ</span>
                     <h3 id="pdf-net-balance" class="text-xl font-bold text-blue-700 mt-1">฿0.00</h3>
                 </div>
                 <div class="text-center border-r border-slate-200 pr-2">
-                    <span class="text-xs text-gray-500 font-medium">รวมรายรับทั้งหมด</span>
+                    <span class="text-xs text-slate-500 font-medium">รวมรายรับทั้งหมด</span>
                     <h3 id="pdf-total-income" class="text-xl font-bold text-emerald-600 mt-1">฿0.00</h3>
                 </div>
                 <div class="text-center">
-                    <span class="text-xs text-gray-500 font-medium">รวมรายจ่ายทั้งหมด</span>
+                    <span class="text-xs text-slate-500 font-medium">รวมรายจ่ายทั้งหมด</span>
                     <h3 id="pdf-total-expense" class="text-xl font-bold text-rose-600 mt-1">฿0.00</h3>
                 </div>
             </div>
 
             <!-- Chart Section -->
             <div class="mb-6">
-                <h3 class="text-sm font-bold text-gray-700 mb-2 border-l-4 border-blue-600 pl-2">สรุปสถิติกราฟกระแสเงินสด</h3>
-                <div class="flex justify-center bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <img id="pdf-chart-img" class="max-h-48 object-contain" alt="Financial Chart" />
+                <h3 class="text-sm font-bold text-slate-800 mb-3 border-l-4 border-blue-600 pl-2.5">สรุปสถิติกราฟกระแสเงินสด</h3>
+                <div class="flex justify-center bg-slate-50 p-4 rounded-2xl border border-slate-200 min-h-[200px] items-center">
+                    <img id="pdf-chart-img" class="max-h-56 w-full object-contain" alt="Financial Chart" />
                 </div>
             </div>
 
             <!-- Transaction Table Section -->
-            <div>
-                <h3 class="text-sm font-bold text-gray-700 mb-2 border-l-4 border-blue-600 pl-2">ประวัติรายการธุรกรรมทั้งหมด</h3>
-                <table class="w-full text-xs text-left border-collapse border border-slate-200">
+            <div class="mb-6">
+                <h3 class="text-sm font-bold text-slate-800 mb-3 border-l-4 border-blue-600 pl-2.5">ประวัติรายการธุรกรรมทั้งหมด</h3>
+                <table class="w-full text-xs text-left border-collapse border border-slate-200 rounded-lg overflow-hidden">
                     <thead>
-                        <tr class="bg-blue-800 text-white font-semibold">
-                            <th class="p-2 border border-slate-300">วันที่</th>
-                            <th class="p-2 border border-slate-300">รายการ</th>
-                            <th class="p-2 border border-slate-300">หมวดหมู่</th>
-                            <th class="p-2 border border-slate-300 text-center">ประเภท</th>
-                            <th class="p-2 border border-slate-300 text-right">จำนวนเงิน (THB)</th>
+                        <tr class="bg-blue-900 text-white font-semibold">
+                            <th class="py-2.5 px-3 border border-slate-300">วันที่</th>
+                            <th class="py-2.5 px-3 border border-slate-300">รายการ</th>
+                            <th class="py-2.5 px-3 border border-slate-300">หมวดหมู่</th>
+                            <th class="py-2.5 px-3 border border-slate-300 text-center">ประเภท</th>
+                            <th class="py-2.5 px-3 border border-slate-300 text-right">จำนวนเงิน (THB)</th>
                         </tr>
                     </thead>
-                    <tbody id="pdf-table-body" class="divide-y divide-slate-200">
+                    <tbody id="pdf-table-body" class="divide-y divide-slate-200 bg-white">
                         <!-- Populated dynamically -->
                     </tbody>
                 </table>
             </div>
 
             <!-- Footer -->
-            <div class="mt-8 pt-4 border-t border-slate-200 text-center text-[10px] text-gray-400">
-                เอกสารนี้สร้างขึ้นโดยอัตโนมัติจากระบบ Nexus Digital Banking Personal Finance Tracker
+            <div class="mt-8 pt-4 border-t border-slate-200 text-center text-[10px] text-slate-400">
+                เอกสารนี้สร้างขึ้นโดยอัตโนมัติจากระบบ P5 Digital Devices Personal Finance Tracker
             </div>
         </div>
     </div>

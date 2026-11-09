@@ -66,7 +66,7 @@ async function checkPinState() {
         overlay.classList.add('hidden');
         return;
     } else {
-        document.getElementById('pin-title').textContent = "Nexus Banking Lock";
+        document.getElementById('pin-title').textContent = "P5 Devices Lock";
         document.getElementById('pin-subtitle').textContent = "กรุณากรอก PIN 6 หลักเพื่อเข้าใช้งาน";
         btnForgot.classList.remove('hidden');
         overlay.classList.remove('hidden');

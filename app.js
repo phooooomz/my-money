@@ -1,7 +1,7 @@
 /**
  * DATA STORAGE ENGINE
  */
-const db = new Dexie('NexusBankingDB');
+const db = new Dexie('p5devicesDB');
 
 db.version(1).stores({
     transactions: 'id, type, title, category, date, amountSatang',
@@ -173,7 +173,7 @@ async function checkPinState() {
         btnForgot.classList.add('hidden');
         overlay.classList.remove('hidden');
     } else {
-        document.getElementById('pin-title').textContent = "Nexus Banking Lock";
+        document.getElementById('pin-title').textContent = "P5 Devices Lock";
         document.getElementById('pin-subtitle').textContent = "กรุณากรอก PIN 6 หลักเพื่อเข้าใช้งาน";
         btnForgot.classList.remove('hidden');
         overlay.classList.remove('hidden');
@@ -909,7 +909,7 @@ async function exportDataPDF() {
     const element = document.getElementById('pdf-statement-template');
     const opt = {
         margin:       [0.3, 0.3, 0.3, 0.3],
-        filename:     `Nexus_Bank_Statement_${new Date().toISOString().split('T')[0]}.pdf`,
+        filename:     `P5_Devices_Statement_${new Date().toISOString().split('T')[0]}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 2, logging: false },
         jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }

@@ -26,10 +26,19 @@ async function exportDataPDF() {
     document.getElementById('pdf-total-income').textContent = Satang.formatTHB(totalIncomeSatang);
     document.getElementById('pdf-total-expense').textContent = Satang.formatTHB(totalExpenseSatang);
 
-    // 2. Render Chart Base64 Image
-    if (dashboardChartInstance) {
-        const chartImgUri = dashboardChartInstance.toBase64Image();
-        document.getElementById('pdf-chart-img').src = chartImgUri;
+    // 2. Render Chart Base64 Image safely
+    const chartImgEl = document.getElementById('pdf-chart-img');
+    const chartCanvas = document.getElementById('dashMainChart');
+    if (chartCanvas) {
+        try {
+            chartImgEl.src = chartCanvas.toDataURL('image/png');
+            chartImgEl.classList.remove('hidden');
+        } catch (e) {
+            console.error("Failed to render chart image:", e);
+            if (dashboardChartInstance) {
+                chartImgEl.src = dashboardChartInstance.toBase64Image();
+            }
+        }
     }
 
     // 3. Populate Transaction Table inside PDF Template
@@ -37,7 +46,7 @@ async function exportDataPDF() {
     tbody.innerHTML = '';
 
     if (allTx.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">ไม่มีข้อมูลรายการธุรกรรม</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400 font-normal">ไม่มีข้อมูลรายการธุรกรรม</td></tr>`;
     } else {
         allTx.forEach(t => {
             const isIncome = t.type === 'income';
@@ -46,33 +55,36 @@ async function exportDataPDF() {
             const typeLabel = isIncome ? 'รายรับ' : 'รายจ่าย';
 
             const tr = document.createElement('tr');
+            tr.className = 'border-b border-slate-200 hover:bg-slate-50';
             tr.innerHTML = `
-                <td class="p-2 border border-slate-200">${formatThaiDate(t.date)}</td>
-                <td class="p-2 border border-slate-200 font-medium">${escapeHtml(t.title)}${t.note ? ` <span class="text-[10px] text-gray-400">(${escapeHtml(t.note)})</span>` : ''}</td>
-                <td class="p-2 border border-slate-200">${escapeHtml(t.category)}</td>
-                <td class="p-2 border border-slate-200 text-center font-medium">${typeLabel}</td>
-                <td class="p-2 border border-slate-200 text-right ${textColor}">${sign}${Satang.formatTHB(t.amountSatang)}</td>
+                <td class="py-2.5 px-3 text-slate-600">${formatThaiDate(t.date)}</td>
+                <td class="py-2.5 px-3 font-medium text-slate-800">${escapeHtml(t.title)}${t.note ? ` <span class="text-[10px] text-slate-400">(${escapeHtml(t.note)})</span>` : ''}</td>
+                <td class="py-2.5 px-3 text-slate-600">${escapeHtml(t.category)}</td>
+                <td class="py-2.5 px-3 text-center font-medium text-slate-600">${typeLabel}</td>
+                <td class="py-2.5 px-3 text-right ${textColor}">${sign}${Satang.formatTHB(t.amountSatang)}</td>
             `;
             tbody.appendChild(tr);
         });
     }
 
-    // 4. Generate PDF Document using html2pdf.js
+    // 4. Generate PDF Document using html2pdf.js with proper margins
     const element = document.getElementById('pdf-statement-template');
     const opt = {
-        margin:       [0.3, 0.3, 0.3, 0.3],
-        filename:     `Nexus_Bank_Statement_${new Date().toISOString().split('T')[0]}.pdf`,
+        margin:       [0.4, 0.4, 0.4, 0.4],
+        filename:     `P5_Devices_Statement_${new Date().toISOString().split('T')[0]}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, logging: false },
+        html2canvas:  { scale: 2, logging: false, useCORS: true },
         jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
 
-    html2pdf().set(opt).from(element).save().then(() => {
-        showToast("ดาวน์โหลด PDF Statement เรียบร้อย", "success");
-    }).catch(err => {
-        console.error("PDF Export error:", err);
-        showToast("เกิดข้อผิดพลาดในการสร้าง PDF", "error");
-    });
+    setTimeout(() => {
+        html2pdf().set(opt).from(element).save().then(() => {
+            showToast("ดาวน์โหลด PDF Statement เรียบร้อย", "success");
+        }).catch(err => {
+            console.error("PDF Export error:", err);
+            showToast("เกิดข้อผิดพลาดในการสร้าง PDF", "error");
+        });
+    }, 150);
 }
 
 /**
@@ -92,7 +104,7 @@ async function exportDataCSV() {
     const url = URL.createObjectURL(blob);
     const dlAnchor = document.createElement('a');
     dlAnchor.setAttribute("href", url);
-    dlAnchor.setAttribute("download", `nexus_transactions_${new Date().toISOString().split('T')[0]}.csv`);
+    dlAnchor.setAttribute("download", `p5_transactions_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(dlAnchor);
     dlAnchor.click();
     dlAnchor.remove();
