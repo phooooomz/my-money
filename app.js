@@ -46,13 +46,25 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function seedDefaultCategoriesIfNeeded() {
-    const count = await db.categories.count();
-    if (count === 0) {
-        for (const cat of defaultCategories.income) {
-            await db.categories.add({ type: 'income', name: cat });
+    // defaultCategories (above) is the single source of truth:
+    // - categories listed there but missing from the database are added
+    // - categories in the database but no longer listed are removed, unless a transaction still uses them
+    const existing = await db.categories.toArray();
+
+    for (const type of ['income', 'expense']) {
+        for (const name of defaultCategories[type]) {
+            if (!existing.some(c => c.type === type && c.name === name)) {
+                await db.categories.add({ type, name });
+            }
         }
-        for (const cat of defaultCategories.expense) {
-            await db.categories.add({ type: 'expense', name: cat });
+    }
+
+    for (const c of existing) {
+        const stillListed = (defaultCategories[c.type] || []).includes(c.name);
+        if (stillListed) continue;
+        const usedCount = await db.transactions.where('category').equals(c.name).count();
+        if (usedCount === 0) {
+            await db.categories.delete(c.id);
         }
     }
 }
@@ -165,7 +177,6 @@ async function renderApp() {
     await renderDashboard();
     await renderTransactionsView();
     await renderAnalyticsView();
-    await renderCategoriesView();
 }
 
 /**
@@ -496,83 +507,6 @@ async function populateCategorySelects() {
         filterCatSelect.appendChild(opt);
     });
     filterCatSelect.value = filterPrev;
-}
-
-async function renderCategoriesView() {
-    const incomeList = document.getElementById('cat-income-list');
-    const expenseList = document.getElementById('cat-expense-list');
-
-    incomeList.innerHTML = '';
-    expenseList.innerHTML = '';
-
-    const incomeCats = await db.categories.where('type').equals('income').toArray();
-    const expenseCats = await db.categories.where('type').equals('expense').toArray();
-
-    for (const c of incomeCats) {
-        incomeList.appendChild(await createCategoryBadge(c));
-    }
-    for (const c of expenseCats) {
-        expenseList.appendChild(await createCategoryBadge(c));
-    }
-}
-
-async function createCategoryBadge(catObj) {
-    const count = await db.transactions.where('category').equals(catObj.name).count();
-    const div = document.createElement('div');
-    div.className = 'flex items-center justify-between p-3 rounded-xl bg-darkSurface border border-darkBorder';
-    div.innerHTML = `
-        <div>
-            <span class="text-sm font-medium text-white">${escapeHtml(catObj.name)}</span>
-            <span class="text-[10px] text-gray-400 block">${count} รายการ</span>
-        </div>
-        <button onclick="deleteCategory(${catObj.id}, '${escapeHtml(catObj.name)}')" class="p-1.5 text-gray-500 hover:text-expenseRed transition">
-            <i class="fa-solid fa-trash-can text-sm"></i>
-        </button>
-    `;
-    return div;
-}
-
-function openCategoryModal() {
-    document.getElementById('form-cat').reset();
-    document.getElementById('modal-cat').classList.remove('hidden');
-}
-
-function closeCategoryModal() {
-    document.getElementById('modal-cat').classList.add('hidden');
-}
-
-async function saveCategory(e) {
-    e.preventDefault();
-    const type = document.getElementById('cat-type').value;
-    const name = document.getElementById('cat-name').value.trim();
-
-    if (!name) return;
-
-    const existing = await db.categories.where({ type, name }).first();
-    if (existing) {
-        showToast("มีหมวดหมู่นี้อยู่แล้ว", "error");
-        return;
-    }
-
-    await db.categories.add({ type, name });
-    closeCategoryModal();
-    renderApp();
-    showToast("เพิ่มหมวดหมู่สำเร็จ", "success");
-}
-
-async function deleteCategory(id, catName) {
-    const usedCount = await db.transactions.where('category').equals(catName).count();
-    if (usedCount > 0) {
-        showToast(`ไม่สามารถลบได้ มี ${usedCount} รายการใช้งานหมวดหมู่นี้อยู่`, "error");
-        return;
-    }
-
-    const confirmed = await showConfirmDialog("ยืนยันการลบหมวดหมู่?", `คุณต้องการลบหมวดหมู่ "${catName}" หรือไม่?`);
-    if (confirmed) {
-        await db.categories.delete(id);
-        renderApp();
-        showToast("ลบหมวดหมู่เรียบร้อย", "success");
-    }
 }
 
 /**

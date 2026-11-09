@@ -4,9 +4,9 @@
  * - ไอคอนแบรนด์ใช้ 'fa-brands fa-xxx', ไอคอนทั่วไปใช้ 'fa-solid fa-xxx' (FontAwesome 6.4 Free)
  */
 const CONTACT_CHANNELS = [
-    { label: 'LINE',      sub: '@your-line-id',  icon: 'fa-brands fa-line',      color: '#06C755', href: 'https://line.me/ti/p/~your-line-id' },
-    { label: 'Instagram', sub: '@your_ig',       icon: 'fa-brands fa-instagram', color: '#E1306C', href: 'https://instagram.com/your_ig' },
-    { label: 'Discord',   sub: 'your-server',    icon: 'fa-brands fa-discord',   color: '#5865F2', href: 'https://discord.gg/your-invite' }
+    { label: 'LINE',      sub: '@',  icon: 'fa-brands fa-line',      color: '#06C755', href: 'https://line.me/' },
+    { label: 'Instagram', sub: '@',       icon: 'fa-brands fa-instagram', color: '#E1306C', href: 'https://instagram.com/' },
+    { label: 'Discord',   sub: '',    icon: 'fa-brands fa-discord',   color: '#5865F2', href: 'https://discord.gg/' }
 ];
 
 /** ตอนนี้ยังไม่เก็บคะแนนที่ไหน — ไว้ค่อยต่อ Google Form / Firebase ฯลฯ ที่ฟังก์ชันนี้ในอนาคต */
