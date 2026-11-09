@@ -853,21 +853,74 @@ function renderMonthlyComparisonChart(allTx) {
     });
 }
 
-// ================= SETTINGS, BACKUP & RESET =================
-async function exportDataJSON() {
-    const txs = await db.transactions.toArray();
-    const cats = await db.categories.toArray();
-    const exportObj = { transactions: txs, categories: cats, exportDate: new Date().toISOString() };
-    
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj, null, 2));
-    const dlAnchor = document.createElement('a');
-    dlAnchor.setAttribute("href", dataStr);
-    dlAnchor.setAttribute("download", `banking_finance_backup_${new Date().toISOString().split('T')[0]}.json`);
-    document.body.appendChild(dlAnchor);
-    dlAnchor.click();
-    dlAnchor.remove();
+// ================= STATEMENT PDF & CSV EXPORT =================
+async function exportDataPDF() {
+    showToast("กำลังเตรียมไฟล์ PDF Statement...", "info");
 
-    Swal.fire({ icon: 'success', title: 'ส่งออก JSON สำเร็จ', timer: 1200, showConfirmButton: false, background: '#1F2937', color: '#F3F4F6' });
+    const allTx = await db.transactions.orderBy('date').reverse().toArray();
+    let totalIncomeSatang = 0;
+    let totalExpenseSatang = 0;
+
+    allTx.forEach(t => {
+        if (t.type === 'income') totalIncomeSatang += t.amountSatang;
+        else totalExpenseSatang += t.amountSatang;
+    });
+
+    const netBalanceSatang = totalIncomeSatang - totalExpenseSatang;
+
+    // 1. Fill Header Info
+    document.getElementById('pdf-date').textContent = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('pdf-net-balance').textContent = Satang.formatTHB(netBalanceSatang);
+    document.getElementById('pdf-total-income').textContent = Satang.formatTHB(totalIncomeSatang);
+    document.getElementById('pdf-total-expense').textContent = Satang.formatTHB(totalExpenseSatang);
+
+    // 2. Render Canvas Chart Image into PDF
+    if (dashboardChartInstance) {
+        const chartImgUri = dashboardChartInstance.toBase64Image();
+        document.getElementById('pdf-chart-img').src = chartImgUri;
+    }
+
+    // 3. Fill Transactions Table
+    const tbody = document.getElementById('pdf-table-body');
+    tbody.innerHTML = '';
+
+    if (allTx.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">ไม่มีข้อมูลรายการธุรกรรม</td></tr>`;
+    } else {
+        allTx.forEach(t => {
+            const isIncome = t.type === 'income';
+            const sign = isIncome ? '+' : '-';
+            const textColor = isIncome ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold';
+            const typeLabel = isIncome ? 'รายรับ' : 'รายจ่าย';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="p-2 border border-slate-200">${formatThaiDate(t.date)}</td>
+                <td class="p-2 border border-slate-200 font-medium">${escapeHtml(t.title)}${t.note ? ` <span class="text-[10px] text-gray-400">(${escapeHtml(t.note)})</span>` : ''}</td>
+                <td class="p-2 border border-slate-200">${escapeHtml(t.category)}</td>
+                <td class="p-2 border border-slate-200 text-center font-medium">${typeLabel}</td>
+                <td class="p-2 border border-slate-200 text-right ${textColor}">${sign}${Satang.formatTHB(t.amountSatang)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // 4. Generate PDF via html2pdf.js
+    const element = document.getElementById('pdf-statement-template');
+    const opt = {
+        margin:       [0.3, 0.3, 0.3, 0.3],
+        filename:     `Nexus_Bank_Statement_${new Date().toISOString().split('T')[0]}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, logging: false },
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+        showToast("ดาวน์โหลด PDF Statement เรียบร้อย", "success");
+    }).catch(err => {
+        console.error("PDF Export error:", err);
+        showToast("เกิดข้อผิดพลาดในการสร้าง PDF", "error");
+    });
 }
 
 async function exportDataCSV() {
@@ -888,83 +941,6 @@ async function exportDataCSV() {
     dlAnchor.remove();
 
     Swal.fire({ icon: 'success', title: 'ส่งออก CSV สำเร็จ', timer: 1200, showConfirmButton: false, background: '#1F2937', color: '#F3F4F6' });
-}
-
-async function handleImportFile(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const rawData = JSON.parse(e.target.result);
-            
-            // Support both object wrapper { transactions: [...] } and raw array [...]
-            const txs = Array.isArray(rawData) ? rawData : (rawData.transactions || []);
-            const cats = Array.isArray(rawData.categories) ? rawData.categories : null;
-
-            if (txs.length === 0 && (!cats || cats.length === 0)) {
-                throw new Error('ไม่พบข้อมูลธุรกรรมในไฟล์');
-            }
-
-            await db.transaction('rw', db.transactions, db.categories, async () => {
-                if (txs.length > 0) {
-                    await db.transactions.clear();
-                    
-                    const cleanTxs = txs.map((t, idx) => {
-                        // Calculate amountSatang correctly from either amountSatang or amount float
-                        let satangVal = 0;
-                        if (typeof t.amountSatang !== 'undefined') {
-                            satangVal = parseInt(t.amountSatang) || 0;
-                        } else if (typeof t.amount !== 'undefined') {
-                            satangVal = Satang.fromFloat(t.amount);
-                        }
-
-                        return {
-                            id: t.id ? String(t.id) : ('TX_IMP_' + Date.now() + '_' + idx),
-                            type: t.type === 'income' ? 'income' : 'expense',
-                            title: String(t.title || 'ไม่ระบุชื่อ'),
-                            amountSatang: satangVal,
-                            category: String(t.category || 'อื่น ๆ'),
-                            date: t.date || new Date().toISOString().split('T')[0],
-                            note: t.note ? String(t.note) : ''
-                        };
-                    });
-
-                    await db.transactions.bulkPut(cleanTxs);
-                }
-
-                if (cats && cats.length > 0) {
-                    await db.categories.clear();
-                    for (const c of cats) {
-                        if (c.name && c.type) {
-                            await db.categories.add({ type: c.type, name: c.name });
-                        }
-                    }
-                }
-            });
-
-            await renderApp();
-            Swal.fire({ 
-                icon: 'success', 
-                title: 'นำเข้าข้อมูลสำเร็จ', 
-                text: `โหลดข้อมูลธุรกรรม ${txs.length} รายการเรียบร้อย`, 
-                background: '#1F2937', 
-                color: '#F3F4F6' 
-            });
-        } catch (err) {
-            console.error('Import error:', err);
-            Swal.fire({ 
-                icon: 'error', 
-                title: 'นำเข้าข้อมูลไม่สำเร็จ', 
-                text: 'รูปแบบไฟล์ JSON ไม่ถูกต้องหรือเสียหาย', 
-                background: '#1F2937', 
-                color: '#F3F4F6' 
-            });
-        }
-    };
-    reader.readAsText(file);
-    event.target.value = ''; // Reset file input so user can import the same file again if needed
 }
 
 /**

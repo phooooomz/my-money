@@ -43,6 +43,8 @@
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <!-- SweetAlert2 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- html2pdf.js CDN (สำหรับสร้างไฟล์ PDF) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- External CSS -->
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -419,37 +421,28 @@
                 <section id="view-settings" class="tab-content hidden space-y-6">
                     <div>
                         <h2 class="text-2xl md:text-3xl font-bold text-white tracking-tight">ตั้งค่าระบบและการจัดการข้อมูล</h2>
-                        <p class="text-sm text-gray-400">สำรองข้อมูล นำเข้า ล้างข้อมูล และปรับเปลี่ยนความปลอดภัย PIN</p>
+                        <p class="text-sm text-gray-400">ส่งออกข้อมูล และปรับเปลี่ยนความปลอดภัย PIN</p>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="bg-darkCard border border-darkBorder p-6 rounded-2xl space-y-5">
                             <div class="flex items-center space-x-3 pb-3 border-b border-darkBorder">
-                                <i class="fa-solid fa-database text-bankingBlue text-xl"></i>
-                                <h3 class="font-bold text-lg text-white">สำรองและคืนค่าข้อมูล</h3>
+                                <i class="fa-solid fa-file-pdf text-bankingBlue text-xl"></i>
+                                <h3 class="font-bold text-lg text-white">รายงานทางการเงิน (Statement)</h3>
                             </div>
 
                             <div class="space-y-2">
-                                <label class="text-sm font-medium text-gray-300 block">ส่งออกข้อมูล (Export)</label>
+                                <label class="text-sm font-medium text-gray-300 block">ส่งออกรายงานสรุปและประวัติรายการ</label>
                                 <div class="grid grid-cols-2 gap-3">
-                                    <button onclick="exportDataJSON()" class="px-4 py-2.5 bg-darkSurface hover:bg-darkBorder border border-darkBorder text-white rounded-xl text-sm font-medium transition flex items-center justify-center space-x-2">
-                                        <i class="fa-solid fa-file-code text-bankingBlue"></i>
-                                        <span>ส่งออกเป็น JSON</span>
+                                    <button onclick="exportDataPDF()" class="px-4 py-2.5 bg-bankingBlue hover:bg-bankingBlue-hover text-white rounded-xl text-sm font-medium transition flex items-center justify-center space-x-2 shadow-lg shadow-bankingBlue/20">
+                                        <i class="fa-solid fa-file-pdf"></i>
+                                        <span>ดาวน์โหลด PDF</span>
                                     </button>
                                     <button onclick="exportDataCSV()" class="px-4 py-2.5 bg-darkSurface hover:bg-darkBorder border border-darkBorder text-white rounded-xl text-sm font-medium transition flex items-center justify-center space-x-2">
                                         <i class="fa-solid fa-file-csv text-incomeGreen"></i>
                                         <span>ส่งออกเป็น CSV</span>
                                     </button>
                                 </div>
-                            </div>
-
-                            <div class="space-y-2 pt-3 border-t border-darkBorder">
-                                <label class="text-sm font-medium text-gray-300 block">นำเข้าข้อมูลสำรอง (Import JSON)</label>
-                                <input type="file" id="import-file" accept=".json" class="hidden" onchange="handleImportFile(event)">
-                                <button onclick="document.getElementById('import-file').click()" class="w-full px-4 py-2.5 bg-darkSurface hover:bg-darkBorder border border-darkBorder text-gray-200 rounded-xl text-sm font-medium transition flex items-center justify-center space-x-2">
-                                    <i class="fa-solid fa-upload"></i>
-                                    <span>เลือกไฟล์เพื่อนำเข้าข้อมูล</span>
-                                </button>
                             </div>
                         </div>
 
@@ -459,57 +452,69 @@
                                 <h3 class="font-bold text-lg text-white">ความปลอดภัยและจัดการข้อมูล</h3>
                             </div>
 
-                            <div class="flex items-center justify-between p-3 bg-darkSurface rounded-xl border border-darkBorder">
-                                <div>
-                                    <h4 class="text-sm font-medium text-white">เปลี่ยน PIN 6 หลัก</h4>
-                                    <p class="text-xs text-gray-400">ตั้งค่ารหัสผ่านเข้าใช้งานใหม่</p>
-                                </div>
-                                <button onclick="triggerChangePin()" class="px-3 py-1.5 bg-bankingBlue hover:bg-bankingBlue-hover text-white rounded-lg text-xs font-medium transition">
-                                    เปลี่ยน PIN
-                                </button>
-                            </div>
-
-                            <div class="pt-3 border-t border-darkBorder space-y-2">
-                                <h4 class="text-sm font-medium text-expenseRed flex items-center space-x-2">
-                                    <i class="fa-solid fa-triangle-exclamation"></i>
-                                    <span>โซนอันตราย</span>
-                                </h4>
-                                <p class="text-xs text-gray-400">การล้างข้อมูลทางการเงินจะทำให้บันทึกทั้งหมดถูกลบออกจากระบบอย่างถาวร</p>
-                                <button onclick="confirmWipeAllData()" class="w-full px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-expenseRed border border-expenseRed/30 rounded-xl text-sm font-medium transition flex items-center justify-center space-x-2">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                    <span>ล้างข้อมูลธุรกรรมทั้งหมด</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
+    <!-- HIDDEN PDF STATEMENT TEMPLATE -->
+    <div class="fixed top-[-9999px] left-[-9999px]">
+        <div id="pdf-statement-template" class="w-[800px] p-8 bg-white text-gray-800 font-sans leading-relaxed">
+            <!-- Statement Header -->
+            <div class="flex justify-between items-center border-b-2 border-blue-600 pb-4 mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-blue-800 tracking-wider">NEXUS DIGITAL BANK</h1>
+                    <p class="text-xs text-gray-500">PERSONAL FINANCIAL STATEMENT / รายงานสรุปรายการทางการเงิน</p>
+                </div>
+                <div class="text-right text-xs text-gray-600 space-y-0.5">
+                    <p><span class="font-semibold">วันที่ออกเอกสาร:</span> <span id="pdf-date">-</span></p>
+                    <p><span class="font-semibold">ประเภทบัญชี:</span> Personal Finance Tracker</p>
+                    <p><span class="font-semibold">สกุลเงิน:</span> THB (บาท)</p>
+                </div>
             </div>
-        </main>
 
-        <!-- FLOATING BOTTOM TAB BAR (Mobile Only - Pure Icons with Glow & Active Indicator) -->
-        <div class="md:hidden fixed bottom-5 left-4 right-4 z-30">
-            <nav class="floating-nav-bar bg-darkSurface/90 backdrop-blur-2xl border border-darkBorder/80 rounded-2xl shadow-2xl flex items-center justify-around py-3 px-3">
-                <button onclick="switchTab('dashboard')" id="mob-nav-dashboard" class="mob-nav-item flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 text-bankingBlue bg-bankingBlue/15 relative shadow-sm">
-                    <i class="fa-solid fa-chart-pie text-lg"></i>
-                    <span class="active-dot absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-bankingBlue shadow-glow"></span>
-                </button>
-                <button onclick="switchTab('transactions')" id="mob-nav-transactions" class="mob-nav-item flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 text-gray-400 relative hover:text-white">
-                    <i class="fa-solid fa-receipt text-lg"></i>
-                    <span class="active-dot hidden absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-bankingBlue shadow-glow"></span>
-                </button>
-                <button onclick="openTransactionModal()" class="flex flex-col items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-bankingBlue to-blue-400 text-white shadow-lg shadow-bankingBlue/50 transition-all duration-300 active:scale-90 hover:scale-110">
-                    <i class="fa-solid fa-plus text-lg"></i>
-                </button>
-                <button onclick="switchTab('analytics')" id="mob-nav-analytics" class="mob-nav-item flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 text-gray-400 relative hover:text-white">
-                    <i class="fa-solid fa-chart-line text-lg"></i>
-                    <span class="active-dot hidden absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-bankingBlue shadow-glow"></span>
-                </button>
-                <button onclick="switchTab('settings')" id="mob-nav-settings" class="mob-nav-item flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 text-gray-400 relative hover:text-white">
-                    <i class="fa-solid fa-sliders text-lg"></i>
-                    <span class="active-dot hidden absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-bankingBlue shadow-glow"></span>
-                </button>
-            </nav>
+            <!-- Financial Summary Box -->
+            <div class="grid grid-cols-3 gap-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div class="text-center border-r border-slate-200 pr-2">
+                    <span class="text-xs text-gray-500 font-medium">ยอดเงินคงเหลือสุทธิ</span>
+                    <h3 id="pdf-net-balance" class="text-xl font-bold text-blue-700 mt-1">฿0.00</h3>
+                </div>
+                <div class="text-center border-r border-slate-200 pr-2">
+                    <span class="text-xs text-gray-500 font-medium">รวมรายรับทั้งหมด</span>
+                    <h3 id="pdf-total-income" class="text-xl font-bold text-emerald-600 mt-1">฿0.00</h3>
+                </div>
+                <div class="text-center">
+                    <span class="text-xs text-gray-500 font-medium">รวมรายจ่ายทั้งหมด</span>
+                    <h3 id="pdf-total-expense" class="text-xl font-bold text-rose-600 mt-1">฿0.00</h3>
+                </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="mb-6">
+                <h3 class="text-sm font-bold text-gray-700 mb-2 border-l-4 border-blue-600 pl-2">สรุปสถิติกราฟกระแสเงินสด</h3>
+                <div class="flex justify-center bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <img id="pdf-chart-img" class="max-h-48 object-contain" alt="Financial Chart" />
+                </div>
+            </div>
+
+            <!-- Transaction Table Section -->
+            <div>
+                <h3 class="text-sm font-bold text-gray-700 mb-2 border-l-4 border-blue-600 pl-2">ประวัติรายการธุรกรรมทั้งหมด</h3>
+                <table class="w-full text-xs text-left border-collapse border border-slate-200">
+                    <thead>
+                        <tr class="bg-blue-800 text-white font-semibold">
+                            <th class="p-2 border border-slate-300">วันที่</th>
+                            <th class="p-2 border border-slate-300">รายการ</th>
+                            <th class="p-2 border border-slate-300">หมวดหมู่</th>
+                            <th class="p-2 border border-slate-300 text-center">ประเภท</th>
+                            <th class="p-2 border border-slate-300 text-right">จำนวนเงิน (THB)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pdf-table-body" class="divide-y divide-slate-200">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer -->
+            <div class="mt-8 pt-4 border-t border-slate-200 text-center text-[10px] text-gray-400">
+                เอกสารนี้สร้างขึ้นโดยอัตโนมัติจากระบบ Nexus Digital Banking Personal Finance Tracker
+            </div>
         </div>
     </div>
 
