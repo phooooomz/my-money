@@ -1,5 +1,5 @@
 /**
- * DATA STORAGE ENGINE
+ * CORE DATA STORAGE ENGINE & DASHBOARD CONTROLLER
  */
 const db = new Dexie('p5devicesDB');
 
@@ -19,14 +19,8 @@ const Satang = {
     }
 };
 
-// Application State
+// Application Global State
 let currentTab = 'dashboard';
-let pinInputBuffer = '';
-let pinSetupStep = 1;
-let pinTempFirst = '';
-let pinFailedAttempts = 0;
-let lockUntilTimestamp = 0;
-
 let dashboardChartInstance = null;
 let categoryChartInstance = null;
 let monthlyChartInstance = null;
@@ -43,8 +37,12 @@ const defaultCategories = {
 window.addEventListener('DOMContentLoaded', async () => {
     await seedDefaultCategoriesIfNeeded();
     initDateInputDefault();
-    await checkPinState();
-    window.addEventListener('keydown', handleGlobalKeyDown);
+    if (typeof checkPinState === 'function') {
+        await checkPinState();
+    }
+    if (typeof handleGlobalKeyDown === 'function') {
+        window.addEventListener('keydown', handleGlobalKeyDown);
+    }
 });
 
 async function seedDefaultCategoriesIfNeeded() {
@@ -61,7 +59,8 @@ async function seedDefaultCategoriesIfNeeded() {
 
 function initDateInputDefault() {
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('tx-date').value = today;
+    const dateEl = document.getElementById('tx-date');
+    if (dateEl) dateEl.value = today;
 }
 
 /**
@@ -105,216 +104,20 @@ async function showConfirmDialog(title, text, confirmButtonText = 'ยืนย�
 }
 
 /**
- * PIN SECURITY SYSTEM
+ * HELPER FOR CATEGORY ICONS
  */
-async function hashPin(pinText, saltHex = null) {
-    const encoder = new TextEncoder();
-    const pinData = encoder.encode(pinText);
-    
-    let salt;
-    if (saltHex) {
-        salt = new Uint8Array(saltHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-    } else {
-        salt = window.crypto.getRandomValues(new Uint8Array(16));
-    }
+function getCategoryIconClass(categoryName, type) {
+    const cat = (categoryName || '').toLowerCase();
+    if (cat.includes('อาหาร') || cat.includes('กิน') || cat.includes('เครื่องดื่ม')) return 'fa-utensils';
+    if (cat.includes('เดินทาง') || cat.includes('รถ') || cat.includes('น้ำมัน')) return 'fa-car';
+    if (cat.includes('ช้อปปิ้ง') || cat.includes('ซื้อของ')) return 'fa-bag-shopping';
+    if (cat.includes('บิล') || cat.includes('ไฟ') || cat.includes('น้ำ') || cat.includes('เน็ต')) return 'fa-receipt';
+    if (cat.includes('สุขภาพ') || cat.includes('ยา') || cat.includes('หมอ')) return 'fa-heart-pulse';
+    if (cat.includes('บันเทิง') || cat.includes('หนัง') || cat.includes('เกม')) return 'fa-gamepad';
+    if (cat.includes('เงินเดือน') || cat.includes('รายได้')) return 'fa-money-bill-wave';
+    if (cat.includes('โบนัส') || cat.includes('งานเสริม')) return 'fa-briefcase';
 
-    const keyMaterial = await window.crypto.subtle.importKey(
-        'raw', pinData, { name: 'PBKDF2' }, false, ['deriveBits', 'deriveKey']
-    );
-
-    const derivedKey = await window.crypto.subtle.deriveKey(
-        {
-            name: 'PBKDF2',
-            salt: salt,
-            iterations: 100000,
-            hash: 'SHA-256'
-        },
-        keyMaterial,
-        { name: 'AES-GCM', length: 256 },
-        true,
-        ['encrypt', 'decrypt']
-    );
-
-    const exportedKey = await window.crypto.subtle.exportKey('raw', derivedKey);
-    const hashHex = Array.from(new Uint8Array(exportedKey)).map(b => b.toString(16).padStart(2, '0')).join('');
-    const saltHexStr = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
-
-    return { hashHex, saltHexStr };
-}
-
-async function getPinData() {
-    const pinHashItem = await db.settings.get('pinHash');
-    const pinSaltItem = await db.settings.get('pinSalt');
-    return {
-        pinHash: pinHashItem ? pinHashItem.value : null,
-        pinSalt: pinSaltItem ? pinSaltItem.value : null
-    };
-}
-
-async function setPinData(pinHash, pinSalt) {
-    if (pinHash && pinSalt) {
-        await db.settings.put({ key: 'pinHash', value: pinHash });
-        await db.settings.put({ key: 'pinSalt', value: pinSalt });
-    } else {
-        await db.settings.delete('pinHash');
-        await db.settings.delete('pinSalt');
-    }
-}
-
-async function checkPinState() {
-    const overlay = document.getElementById('pin-overlay');
-    const btnForgot = document.getElementById('btn-forgot-pin');
-    const { pinHash } = await getPinData();
-
-    if (!pinHash) {
-        pinSetupStep = 1;
-        document.getElementById('pin-title').textContent = "ตั้งรหัส PIN 6 หลัก";
-        document.getElementById('pin-subtitle').textContent = "กำหนดรหัสผ่านเพื่อความปลอดภัยในการเข้าใช้งาน";
-        btnForgot.classList.add('hidden');
-        overlay.classList.remove('hidden');
-    } else {
-        document.getElementById('pin-title').textContent = "P5 Devices Lock";
-        document.getElementById('pin-subtitle').textContent = "กรุณากรอก PIN 6 หลักเพื่อเข้าใช้งาน";
-        btnForgot.classList.remove('hidden');
-        overlay.classList.remove('hidden');
-    }
-    resetPinInput();
-}
-
-function lockApp() {
-    pinInputBuffer = '';
-    checkPinState();
-}
-
-function updatePinDots() {
-    const container = document.getElementById('pin-dots');
-    const dots = container.querySelectorAll('div');
-    for (let i = 0; i < 6; i++) {
-        if (i < pinInputBuffer.length) {
-            dots[i].className = 'w-4 h-4 rounded-full bg-bankingBlue border-2 border-bankingBlue shadow-sm shadow-bankingBlue/50';
-        } else {
-            dots[i].className = 'w-4 h-4 rounded-full border-2 border-darkBorder bg-transparent';
-        }
-    }
-}
-
-async function pressPinKey(digit) {
-    if (Date.now() < lockUntilTimestamp) {
-        const remainSec = Math.ceil((lockUntilTimestamp - Date.now()) / 1000);
-        document.getElementById('pin-error-msg').textContent = `พยายามเกินกำหนด ลองใหม่ใน ${remainSec} วินาที`;
-        return;
-    }
-
-    if (pinInputBuffer.length < 6) {
-        pinInputBuffer += digit;
-        updatePinDots();
-    }
-
-    if (pinInputBuffer.length === 6) {
-        setTimeout(async () => {
-            await processPinSubmission();
-        }, 100);
-    }
-}
-
-function backspacePinKey() {
-    if (pinInputBuffer.length > 0) {
-        pinInputBuffer = pinInputBuffer.slice(0, -1);
-        updatePinDots();
-    }
-}
-
-function resetPinInput() {
-    pinInputBuffer = '';
-    updatePinDots();
-    document.getElementById('pin-error-msg').textContent = '';
-}
-
-async function processPinSubmission() {
-    const errEl = document.getElementById('pin-error-msg');
-    const { pinHash, pinSalt } = await getPinData();
-
-    if (!pinHash) {
-        if (pinSetupStep === 1) {
-            pinTempFirst = pinInputBuffer;
-            pinSetupStep = 2;
-            pinInputBuffer = '';
-            document.getElementById('pin-title').textContent = "ยืนยันรหัส PIN 6 หลัก";
-            document.getElementById('pin-subtitle').textContent = "กรอกรหัส PIN เดิมอีกครั้งเพื่อยืนยัน";
-            updatePinDots();
-        } else if (pinSetupStep === 2) {
-            if (pinInputBuffer === pinTempFirst) {
-                const { hashHex, saltHexStr } = await hashPin(pinInputBuffer);
-                await setPinData(hashHex, saltHexStr);
-                document.getElementById('pin-overlay').classList.add('hidden');
-                showToast("ตั้งรหัส PIN สำเร็จ", "success");
-                renderApp();
-            } else {
-                triggerPinErrorAnimation();
-                errEl.textContent = "รหัส PIN ไม่ตรงกัน กรุณาตั้งใหม่";
-                pinSetupStep = 1;
-                pinInputBuffer = '';
-                document.getElementById('pin-title').textContent = "ตั้งรหัส PIN 6 หลัก";
-                document.getElementById('pin-subtitle').textContent = "กำหนดรหัสผ่านเพื่อความปลอดภัยในการเข้าใช้งาน";
-                updatePinDots();
-            }
-        }
-        return;
-    }
-
-    const { hashHex } = await hashPin(pinInputBuffer, pinSalt);
-    if (hashHex === pinHash) {
-        pinFailedAttempts = 0;
-        document.getElementById('pin-overlay').classList.add('hidden');
-        renderApp();
-    } else {
-        pinFailedAttempts++;
-        triggerPinErrorAnimation();
-        pinInputBuffer = '';
-        updatePinDots();
-        if (pinFailedAttempts >= 5) {
-            lockUntilTimestamp = Date.now() + 30000;
-            errEl.textContent = "กรอกผิดเกิน 5 ครั้ง ล็อกเป็นเวลา 30 วินาที";
-        } else {
-            errEl.textContent = `รหัส PIN ไม่ถูกต้อง (เหลือ ${5 - pinFailedAttempts} ครั้ง)`;
-        }
-    }
-}
-
-function triggerPinErrorAnimation() {
-    const dots = document.getElementById('pin-dots');
-    dots.classList.add('shake-animation');
-    setTimeout(() => dots.classList.remove('shake-animation'), 400);
-}
-
-function handleGlobalKeyDown(e) {
-    const overlay = document.getElementById('pin-overlay');
-    if (!overlay.classList.contains('hidden')) {
-        if (e.key >= '0' && e.key <= '9') {
-            pressPinKey(e.key);
-        } else if (e.key === 'Backspace') {
-            backspacePinKey();
-        } else if (e.key === 'Escape') {
-            resetPinInput();
-        }
-    }
-}
-
-async function handleForgotPin() {
-    const confirmed = await showConfirmDialog("รีเซ็ตรหัส PIN?", "การรีเซ็ต PIN จะอนุญาตให้คุณตั้ง PIN 6 หลักใหม่ โดยข้อมูลการเงินเดิมยังคงปลอดภัย");
-    if (confirmed) {
-        await setPinData(null, null);
-        await checkPinState();
-        showToast("ล้างรหัส PIN เดิมแล้ว กรุณาตั้ง PIN ใหม่", "info");
-    }
-}
-
-async function triggerChangePin() {
-    const confirmed = await showConfirmDialog("เปลี่ยนรหัส PIN?", "ระบบจะกลับสู่หน้าตั้งค่า PIN 6 หลักใหม่");
-    if (confirmed) {
-        await setPinData(null, null);
-        await checkPinState();
-    }
+    return type === 'income' ? 'fa-arrow-down-left' : 'fa-arrow-up-right';
 }
 
 /**
@@ -323,7 +126,8 @@ async function triggerChangePin() {
 function switchTab(tabId) {
     currentTab = tabId;
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    document.getElementById(`view-${tabId}`).classList.remove('hidden');
+    const targetView = document.getElementById(`view-${tabId}`);
+    if (targetView) targetView.classList.remove('hidden');
 
     document.querySelectorAll('.nav-item').forEach(btn => {
         btn.classList.remove('bg-bankingBlue', 'text-white');
@@ -392,6 +196,7 @@ async function renderDashboard() {
 
 async function renderRecentTransactions() {
     const listEl = document.getElementById('dash-recent-list');
+    if (!listEl) return;
     listEl.innerHTML = '';
 
     const recent = await db.transactions.orderBy('date').reverse().limit(5).toArray();
@@ -406,7 +211,7 @@ async function renderRecentTransactions() {
         const sign = isIncome ? '+' : '-';
         const colorClass = isIncome ? 'text-incomeGreen' : 'text-expenseRed';
         const bgIcon = isIncome ? 'bg-emerald-500/10 text-incomeGreen' : 'bg-rose-500/10 text-expenseRed';
-        const iconClass = isIncome ? 'fa-arrow-down-left' : 'fa-arrow-up-right';
+        const iconClass = getCategoryIconClass(t.category, t.type);
 
         const div = document.createElement('div');
         div.className = 'flex items-center justify-between p-2.5 rounded-xl bg-darkSurface border border-darkBorder hover:border-gray-600 transition';
@@ -430,17 +235,21 @@ function setDashboardChartTimeframe(tf) {
     dashboardTimeframe = tf;
     ['month', 'year', 'all'].forEach(k => {
         const btn = document.getElementById(`btn-tf-${k}`);
-        if (k === tf) {
-            btn.className = 'px-3 py-1 text-xs font-medium rounded-lg transition bg-bankingBlue text-white';
-        } else {
-            btn.className = 'px-3 py-1 text-xs font-medium rounded-lg transition text-gray-400 hover:text-white';
+        if (btn) {
+            if (k === tf) {
+                btn.className = 'px-3 py-1 text-xs font-medium rounded-lg transition bg-bankingBlue text-white';
+            } else {
+                btn.className = 'px-3 py-1 text-xs font-medium rounded-lg transition text-gray-400 hover:text-white';
+            }
         }
     });
     renderApp();
 }
 
 async function renderDashboardChart(allTx) {
-    const ctx = document.getElementById('dashMainChart').getContext('2d');
+    const canvas = document.getElementById('dashMainChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     if (dashboardChartInstance) dashboardChartInstance.destroy();
 
     const filteredTx = filterTxByTimeframe(allTx, dashboardTimeframe);
@@ -568,12 +377,12 @@ function setTxModalType(type) {
     const btnExpense = document.getElementById('tx-type-btn-expense');
     const btnIncome = document.getElementById('tx-type-btn-income');
 
-    if (type === 'expense') {
-        btnExpense.className = 'py-2.5 text-sm font-semibold rounded-xl transition text-white bg-expenseRed shadow-sm';
-        btnIncome.className = 'py-2.5 text-sm font-semibold rounded-xl transition text-gray-400';
-    } else {
+    if (type === 'income') {
         btnIncome.className = 'py-2.5 text-sm font-semibold rounded-xl transition text-white bg-incomeGreen shadow-sm';
         btnExpense.className = 'py-2.5 text-sm font-semibold rounded-xl transition text-gray-400';
+    } else {
+        btnExpense.className = 'py-2.5 text-sm font-semibold rounded-xl transition text-white bg-expenseRed shadow-sm';
+        btnIncome.className = 'py-2.5 text-sm font-semibold rounded-xl transition text-gray-400';
     }
     populateCategorySelects();
 }
@@ -583,7 +392,7 @@ function openTransactionModal() {
     document.getElementById('tx-id').value = '';
     document.getElementById('form-tx').reset();
     initDateInputDefault();
-    setTxModalType('expense');
+    setTxModalType('income');
     document.getElementById('modal-tx').classList.remove('hidden');
 }
 
@@ -799,7 +608,9 @@ async function renderAnalyticsView() {
 }
 
 function renderExpenseCategoryChart(catMap) {
-    const ctx = document.getElementById('chartExpenseCategory').getContext('2d');
+    const canvas = document.getElementById('chartExpenseCategory');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     if (categoryChartInstance) categoryChartInstance.destroy();
 
     const labels = Object.keys(catMap);
@@ -825,7 +636,9 @@ function renderExpenseCategoryChart(catMap) {
 }
 
 function renderMonthlyComparisonChart(allTx) {
-    const ctx = document.getElementById('chartMonthlyComparison').getContext('2d');
+    const canvas = document.getElementById('chartMonthlyComparison');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     if (monthlyChartInstance) monthlyChartInstance.destroy();
 
     const grouped = groupTxByPeriod(allTx);
@@ -851,96 +664,6 @@ function renderMonthlyComparisonChart(allTx) {
             }
         }
     });
-}
-
-// ================= STATEMENT PDF & CSV EXPORT =================
-async function exportDataPDF() {
-    showToast("กำลังเตรียมไฟล์ PDF Statement...", "info");
-
-    const allTx = await db.transactions.orderBy('date').reverse().toArray();
-    let totalIncomeSatang = 0;
-    let totalExpenseSatang = 0;
-
-    allTx.forEach(t => {
-        if (t.type === 'income') totalIncomeSatang += t.amountSatang;
-        else totalExpenseSatang += t.amountSatang;
-    });
-
-    const netBalanceSatang = totalIncomeSatang - totalExpenseSatang;
-
-    // 1. Fill Header Info
-    document.getElementById('pdf-date').textContent = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
-    document.getElementById('pdf-net-balance').textContent = Satang.formatTHB(netBalanceSatang);
-    document.getElementById('pdf-total-income').textContent = Satang.formatTHB(totalIncomeSatang);
-    document.getElementById('pdf-total-expense').textContent = Satang.formatTHB(totalExpenseSatang);
-
-    // 2. Render Canvas Chart Image into PDF
-    if (dashboardChartInstance) {
-        const chartImgUri = dashboardChartInstance.toBase64Image();
-        document.getElementById('pdf-chart-img').src = chartImgUri;
-    }
-
-    // 3. Fill Transactions Table
-    const tbody = document.getElementById('pdf-table-body');
-    tbody.innerHTML = '';
-
-    if (allTx.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">ไม่มีข้อมูลรายการธุรกรรม</td></tr>`;
-    } else {
-        allTx.forEach(t => {
-            const isIncome = t.type === 'income';
-            const sign = isIncome ? '+' : '-';
-            const textColor = isIncome ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold';
-            const typeLabel = isIncome ? 'รายรับ' : 'รายจ่าย';
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="p-2 border border-slate-200">${formatThaiDate(t.date)}</td>
-                <td class="p-2 border border-slate-200 font-medium">${escapeHtml(t.title)}${t.note ? ` <span class="text-[10px] text-gray-400">(${escapeHtml(t.note)})</span>` : ''}</td>
-                <td class="p-2 border border-slate-200">${escapeHtml(t.category)}</td>
-                <td class="p-2 border border-slate-200 text-center font-medium">${typeLabel}</td>
-                <td class="p-2 border border-slate-200 text-right ${textColor}">${sign}${Satang.formatTHB(t.amountSatang)}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    // 4. Generate PDF via html2pdf.js
-    const element = document.getElementById('pdf-statement-template');
-    const opt = {
-        margin:       [0.3, 0.3, 0.3, 0.3],
-        filename:     `P5_Devices_Statement_${new Date().toISOString().split('T')[0]}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, logging: false },
-        jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-    };
-
-    html2pdf().set(opt).from(element).save().then(() => {
-        showToast("ดาวน์โหลด PDF Statement เรียบร้อย", "success");
-    }).catch(err => {
-        console.error("PDF Export error:", err);
-        showToast("เกิดข้อผิดพลาดในการสร้าง PDF", "error");
-    });
-}
-
-async function exportDataCSV() {
-    const txs = await db.transactions.toArray();
-    let csvContent = "\uFEFFID,Date,Type,Category,Title,Amount_THB,Note\n";
-    txs.forEach(t => {
-        const amtStr = Satang.toFloat(t.amountSatang).toFixed(2);
-        csvContent += `"${t.id}","${t.date}","${t.type}","${t.category}","${t.title.replace(/"/g, '""')}","${amtStr}","${(t.note || '').replace(/"/g, '""')}"\n`;
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const dlAnchor = document.createElement('a');
-    dlAnchor.setAttribute("href", url);
-    dlAnchor.setAttribute("download", `banking_transactions_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(dlAnchor);
-    dlAnchor.click();
-    dlAnchor.remove();
-
-    Swal.fire({ icon: 'success', title: 'ส่งออก CSV สำเร็จ', timer: 1200, showConfirmButton: false, background: '#1F2937', color: '#F3F4F6' });
 }
 
 /**

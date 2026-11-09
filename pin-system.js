@@ -223,12 +223,3 @@ async function triggerChangePin() {
     document.getElementById('pin-overlay').classList.remove('hidden');
     resetPinInput();
 }
-
-async function triggerRemovePin() {
-    const confirmed = await showConfirmDialog("ยกเลิกการใช้งาน PIN?", "เมื่อยกเลิกแล้ว คุณสามารถเข้าใช้งานแอปพลิเคชันได้โดยไม่ต้องกรอก PIN");
-    if (confirmed) {
-        await setPinData(null, null);
-        document.getElementById('pin-overlay').classList.add('hidden');
-        showToast("ยกเลิกการใช้งาน PIN เรียบร้อยแล้ว", "info");
-    }
-}
