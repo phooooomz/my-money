@@ -48,7 +48,7 @@
     <!-- External CSS -->
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-darkBg text-gray-100 min-h-screen flex flex-col antialiased selection:bg-bankingBlue selection:text-white">
+<body class="bg-darkBg text-gray-100 min-h-screen flex flex-col antialiased selection:bg-bankingBlue selection:text-white pb-16 md:pb-0">
 
     <!-- SECURITY LOCK OVERLAY -->
     <div id="pin-overlay" class="fixed inset-0 bg-darkBg/95 backdrop-blur-2xl z-50 flex items-center justify-center p-4 hidden">
@@ -110,9 +110,9 @@
                 </div>
             </div>
 
-            <!-- Navigation Links -->
+            <!-- Navigation Links (Desktop) -->
             <nav class="flex-1 px-3 py-4 space-y-1">
-                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium text-gray-300 hover:bg-darkCard hover:text-white">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium text-gray-300 hover:bg-darkCard hover:text-white bg-bankingBlue text-white">
                     <i class="fa-solid fa-chart-pie w-5 text-center text-lg"></i>
                     <span>แดชบอร์ด</span>
                 </button>
@@ -464,6 +464,42 @@
 
             </div>
         </main>
+    </div>
+
+    <!-- MOBILE BOTTOM NAVIGATION TAB BAR (FLOATING NAV) -->
+    <div class="md:hidden fixed bottom-3 left-3 right-3 z-30">
+        <nav class="bg-darkSurface/90 backdrop-blur-xl border border-darkBorder rounded-2xl p-2 flex items-center justify-around shadow-2xl floating-nav-bar">
+            <button onclick="switchTab('dashboard')" id="mob-nav-dashboard" class="mob-nav-item active-nav flex flex-col items-center py-2 px-3 rounded-xl transition text-bankingBlue bg-bankingBlue/20 relative">
+                <i class="fa-solid fa-chart-pie text-lg mb-0.5"></i>
+                <span class="text-[10px] font-medium">แดชบอร์ด</span>
+                <span class="active-dot absolute -top-1 w-1.5 h-1.5 rounded-full bg-bankingBlue"></span>
+            </button>
+
+            <button onclick="switchTab('transactions')" id="mob-nav-transactions" class="mob-nav-item flex flex-col items-center py-2 px-3 rounded-xl transition text-gray-400 relative">
+                <i class="fa-solid fa-receipt text-lg mb-0.5"></i>
+                <span class="text-[10px] font-medium">ประวัติ</span>
+                <span class="active-dot hidden absolute -top-1 w-1.5 h-1.5 rounded-full bg-bankingBlue"></span>
+            </button>
+
+            <button onclick="openTransactionModal()" class="flex flex-col items-center -mt-6">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-bankingBlue to-blue-400 text-white flex items-center justify-center shadow-lg shadow-bankingBlue/50 text-xl border-2 border-darkBg hover:scale-105 transition">
+                    <i class="fa-solid fa-plus"></i>
+                </div>
+                <span class="text-[9px] text-gray-400 font-medium mt-1">เพิ่ม</span>
+            </button>
+
+            <button onclick="switchTab('analytics')" id="mob-nav-analytics" class="mob-nav-item flex flex-col items-center py-2 px-3 rounded-xl transition text-gray-400 relative">
+                <i class="fa-solid fa-chart-line text-lg mb-0.5"></i>
+                <span class="text-[10px] font-medium">วิเคราะห์</span>
+                <span class="active-dot hidden absolute -top-1 w-1.5 h-1.5 rounded-full bg-bankingBlue"></span>
+            </button>
+
+            <button onclick="switchTab('settings')" id="mob-nav-settings" class="mob-nav-item flex flex-col items-center py-2 px-3 rounded-xl transition text-gray-400 relative">
+                <i class="fa-solid fa-sliders text-lg mb-0.5"></i>
+                <span class="text-[10px] font-medium">ตั้งค่า</span>
+                <span class="active-dot hidden absolute -top-1 w-1.5 h-1.5 rounded-full bg-bankingBlue"></span>
+            </button>
+        </nav>
     </div>
 
     <!-- HIDDEN PDF STATEMENT TEMPLATE -->
