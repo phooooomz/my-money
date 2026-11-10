@@ -71,8 +71,13 @@ async function checkPinState() {
     const { pinHash } = await getPinData();
 
     if (!pinHash) {
-        overlay.classList.add('hidden');
-        return;
+        // No PIN yet (first visit, or after a reset): force the PIN setup screen
+        pinSetupStep = 1;
+        pinTempFirst = '';
+        document.getElementById('pin-title').textContent = "ตั้งรหัส PIN 6 หลัก";
+        document.getElementById('pin-subtitle').textContent = "กำหนดรหัสผ่านเพื่อความปลอดภัยในการเข้าใช้งาน";
+        if (btnForgot) btnForgot.classList.add('hidden');
+        overlay.classList.remove('hidden');
     } else {
         document.getElementById('pin-title').textContent = "P5 Devices Lock";
         document.getElementById('pin-subtitle').textContent = "กรุณากรอก PIN 6 หลักเพื่อเข้าใช้งาน";
